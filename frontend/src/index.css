@@ -344,3 +344,227 @@ tbody tr:hover {
   color: #6b7280;
   font-size: 14px;
 }
+
+/* --- Upload states --- */
+
+.upload-spinner {
+  animation: upload-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes upload-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.upload-error {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: left;
+}
+
+/* --- Dashboard: export buttons + pipeline warning banner --- */
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.export-button-secondary {
+  background: white;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.dashboard-banner {
+  margin-bottom: 20px;
+}
+
+.pipeline-warning-banner {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.pipeline-warning-banner ul {
+  margin: 8px 0 0 18px;
+}
+
+/* --- Blueprint overlays (all callouts, not just the selected one) --- */
+
+.blueprint-preview-unavailable {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.blueprint-overlay {
+  position: absolute;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blueprint-overlay.selected {
+  border: 3px solid red;
+  background: rgba(255, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.blueprint-overlay.unselected {
+  border: 2px dashed #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.blueprint-overlay.unselected:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.blueprint-overlay span {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  min-width: 18px;
+  text-align: center;
+  background: red;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.blueprint-overlay.unselected span {
+  background: #6366f1;
+}
+
+/* --- Confidence / review flag --- */
+
+.review-required-flag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+/* --- Part details: issues + procurement --- */
+
+.part-issues,
+.part-procurement {
+  margin-top: 20px;
+}
+
+.part-issues ul {
+  margin-top: 8px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.part-issues li {
+  margin-bottom: 4px;
+}
+
+.part-issues li.severity-error { color: #b91c1c; }
+.part-issues li.severity-warning { color: #b45309; }
+.part-issues li.severity-info { color: #1d4ed8; }
+
+.part-procurement .details-grid {
+  margin-top: 8px;
+}
+
+/* --- Validation + procurement panels --- */
+
+.dashboard-content-secondary {
+  grid-template-columns: 1fr 1fr;
+  margin-top: 25px;
+}
+
+.validation-panel,
+.procurement-panel {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.validation-header,
+.procurement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.validation-header h2,
+.procurement-header h2 {
+  font-size: 18px;
+}
+
+.validation-header span,
+.procurement-header span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.validation-empty {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.bom-empty {
+  padding: 20px;
+}
+
+.validation-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.validation-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f8fafc;
+}
+
+.validation-item p {
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.validation-item.severity-error {
+  background: #fef2f2;
+}
+
+.validation-item.severity-warning {
+  background: #fffbeb;
+}
+
+.validation-item.severity-info {
+  background: #eff6ff;
+}
+
+.validation-icon {
+  flex-shrink: 0;
+}
+
+.procurement-note {
+  color: #9ca3af;
+  font-size: 12px;
+  margin-bottom: 12px;
+}

@@ -1,6 +1,8 @@
 import BlueprintOverlay from "./BlueprintOverlay";
 
-function BlueprintViewer({ blueprint, selectedPart }) {
+function BlueprintViewer({ blueprint, parts, selectedPart, onSelect }) {
+  const isPdf = blueprint.fileType === "application/pdf";
+
   return (
     <div className="blueprint-container">
 
@@ -10,15 +12,22 @@ function BlueprintViewer({ blueprint, selectedPart }) {
       </div>
 
       <div className="blueprint-image-container">
-
-        <img
-          src={blueprint.imageUrl}
-          alt="Engineering blueprint"
-          className="blueprint-image"
-        />
-
-        <BlueprintOverlay part={selectedPart} />
-
+        {blueprint.imageUrl && !isPdf ? (
+          <>
+            <img
+              src={blueprint.imageUrl}
+              alt="Engineering blueprint"
+              className="blueprint-image"
+            />
+            <BlueprintOverlay parts={parts} selectedPart={selectedPart} onSelect={onSelect} />
+          </>
+        ) : (
+          <div className="blueprint-preview-unavailable">
+            {isPdf
+              ? "Preview isn't available for PDF drawings yet — the BOM and validation below are still generated from the real backend result."
+              : "No drawing preview available."}
+          </div>
+        )}
       </div>
 
     </div>

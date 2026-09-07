@@ -21,6 +21,15 @@ from pdf2image.exceptions import (
     PDFSyntaxError,
 )
 
+# Pillow's default MAX_IMAGE_PIXELS (~89.5M) is a decompression-bomb guard
+# meant for images from untrusted sources. Large-format engineering sheets
+# (ANSI D/E, ARCH E, etc.) rasterized at 300 DPI routinely exceed it -- e.g.
+# a 34x44in ANSI E sheet at 300 DPI is ~134M pixels -- which otherwise spams
+# DecompressionBombWarning (and, above 2x the default, raises outright) for
+# perfectly legitimate drawings produced by our own pdf_to_images() below.
+# Raised, not disabled, so a genuinely corrupt/malicious file still trips it.
+Image.MAX_IMAGE_PIXELS = 400_000_000
+
 try:
     from .config import ProcessingConfig, DEFAULT_CONFIG
     from .exceptions import (

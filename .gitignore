@@ -10,6 +10,7 @@ build/
 venv/
 .env
 .env.*
+!.env.example
 
 # Pytest / tooling
 .pytest_cache/
@@ -23,6 +24,9 @@ document-processor/processed/**
 !document-processor/processed/.gitkeep
 document-processor/samples/**
 !document-processor/samples/.gitkeep
+
+# Top-level pipeline demo output (regenerate with run_pipeline.py)
+/pipeline_output/
 
 # OS / editor junk
 .DS_Store

@@ -50,6 +50,25 @@ DEFAULT_PROCUREMENT_CATALOG: dict[str, dict] = {
         "supplier_source": "MetalWorks Fabrication",
         "stock_status": "Backordered",
     },
+    # Parts referenced by vision-extractor's mock extraction data
+    # (vision-extractor/vision_extractor/mock_data.py), so the full
+    # document-processor -> vision-extractor -> intelligence demo has
+    # realistic procurement coverage out of the box.
+    "PL-6061-014": {
+        "estimated_unit_cost_usd": 22.00,
+        "supplier_source": "MetalWorks Fabrication",
+        "stock_status": "In Stock",
+    },
+    "SHCS-M6-025": {
+        "estimated_unit_cost_usd": 0.15,
+        "supplier_source": "Industrial Supply Corp",
+        "stock_status": "In Stock",
+    },
+    "WSH-M8-STD": {
+        "estimated_unit_cost_usd": 0.06,
+        "supplier_source": "Industrial Supply Corp",
+        "stock_status": "In Stock",
+    },
 }
 
 

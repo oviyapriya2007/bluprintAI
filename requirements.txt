@@ -1,0 +1,7 @@
+# BlueprintAI backend API (app.py) dependencies.
+# Each module keeps its own requirements.txt (document-processor/,
+# vision-extractor/, intelligence/) -- install those too, or use .venv
+# in this project root, which already has everything installed.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9

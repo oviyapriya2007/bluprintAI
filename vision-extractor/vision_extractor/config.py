@@ -9,10 +9,26 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# python-dotenv's default load_dotenv() walks *upward* from the caller's
+# working directory looking for a .env file -- it never looks inside
+# subdirectories, and the search can miss entirely when this package is
+# imported via a sys.path shim from a different project root (e.g.
+# run_pipeline.py at the repo root). Resolve explicitly instead, checking
+# both the documented location (vision-extractor/.env, per README.md) and
+# this package's own directory, so loading is independent of cwd.
+_MODULE_ROOT = Path(__file__).resolve().parent.parent  # vision-extractor/
+_PACKAGE_DIR = Path(__file__).resolve().parent  # vision-extractor/vision_extractor/
+
+for _env_path in (_MODULE_ROOT / ".env", _PACKAGE_DIR / ".env"):
+    if _env_path.is_file():
+        load_dotenv(_env_path)
+        break
+else:
+    load_dotenv()  # last-resort default search (e.g. a .env elsewhere on the path)
 
 
 def _str_to_bool(value: str) -> bool:
