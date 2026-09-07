@@ -1,6 +1,6 @@
 function formatCurrency(value) {
   if (value === null || value === undefined) return "—";
-  return `$${Number(value).toFixed(2)}`;
+  return `₹${Number(value).toFixed(2)}`;
 }
 
 // parts: adapted components (utils/adaptWorkspace.js), each carrying the
@@ -28,8 +28,8 @@ function ProcurementPanel({ parts, summary }) {
               <tr>
                 <th>Part</th>
                 <th>Qty</th>
-                <th>Unit Cost</th>
-                <th>Est. Total</th>
+                <th>Unit Cost (₹)</th>
+                <th>Est. Total (₹)</th>
                 <th>Supplier</th>
               </tr>
             </thead>

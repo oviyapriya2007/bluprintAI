@@ -1,9 +1,12 @@
 """Mock procurement enrichment.
 
 Hackathon scope: no real supplier API. ``DEFAULT_PROCUREMENT_CATALOG``
-is a small, deterministic, hand-written dataset keyed by part number.
-Every dollar figure this module produces is an *estimate* -- callers
-must not present it as a real quotation (see ``ESTIMATE_NOTE``).
+is a small, deterministic, hand-written dataset keyed by part number, with
+suppliers based in Tamil Nadu, India (falling back to elsewhere in India
+if a Tamil Nadu supplier isn't appropriate for a given part -- none of the
+current entries need that fallback). All prices are mock estimates in INR.
+Every figure this module produces is an *estimate* -- callers must not
+present it as a real quotation (see ``ESTIMATE_NOTE``).
 """
 
 from __future__ import annotations
@@ -19,35 +22,38 @@ ESTIMATE_NOTE = (
 
 # Deterministic mock catalog. Part numbers not listed here simply have
 # no pricing data available -- that's a normal, non-fatal outcome.
+# Supplier names carry their city so the supplier's Tamil Nadu location is
+# visible directly in the existing single "supplier_source" field, with no
+# contract/schema change. Prices are mock INR estimates.
 DEFAULT_PROCUREMENT_CATALOG: dict[str, dict] = {
     "FB-M8-001": {
-        "estimated_unit_cost_usd": 0.45,
-        "supplier_source": "Industrial Supply Corp",
+        "estimated_unit_cost_usd": 35.00,
+        "supplier_source": "Chennai Fastener Works",
         "stock_status": "In Stock",
     },
     "WSH-M8-002": {
-        "estimated_unit_cost_usd": 0.08,
-        "supplier_source": "Industrial Supply Corp",
+        "estimated_unit_cost_usd": 6.00,
+        "supplier_source": "Coimbatore Precision Components",
         "stock_status": "In Stock",
     },
     "BRK-STD-100": {
-        "estimated_unit_cost_usd": 12.75,
-        "supplier_source": "MetalWorks Fabrication",
+        "estimated_unit_cost_usd": 950.00,
+        "supplier_source": "Salem Metal Fabricators",
         "stock_status": "In Stock",
     },
     "BRG-6202-Z": {
-        "estimated_unit_cost_usd": 3.20,
-        "supplier_source": "Precision Bearings Inc",
+        "estimated_unit_cost_usd": 240.00,
+        "supplier_source": "Tiruchirappalli Bearing Traders",
         "stock_status": "Low Stock",
     },
     "GSK-RUB-045": {
-        "estimated_unit_cost_usd": 1.10,
-        "supplier_source": "SealTech Components",
+        "estimated_unit_cost_usd": 85.00,
+        "supplier_source": "Erode Rubber & Seals Co.",
         "stock_status": "In Stock",
     },
     "SHF-ST-303": {
-        "estimated_unit_cost_usd": 8.50,
-        "supplier_source": "MetalWorks Fabrication",
+        "estimated_unit_cost_usd": 640.00,
+        "supplier_source": "Hosur Precision Engineering",
         "stock_status": "Backordered",
     },
     # Parts referenced by vision-extractor's mock extraction data
@@ -55,18 +61,18 @@ DEFAULT_PROCUREMENT_CATALOG: dict[str, dict] = {
     # document-processor -> vision-extractor -> intelligence demo has
     # realistic procurement coverage out of the box.
     "PL-6061-014": {
-        "estimated_unit_cost_usd": 22.00,
-        "supplier_source": "MetalWorks Fabrication",
+        "estimated_unit_cost_usd": 1650.00,
+        "supplier_source": "Coimbatore Metal Fabricators",
         "stock_status": "In Stock",
     },
     "SHCS-M6-025": {
-        "estimated_unit_cost_usd": 0.15,
-        "supplier_source": "Industrial Supply Corp",
+        "estimated_unit_cost_usd": 11.00,
+        "supplier_source": "Tiruppur Fastener Industries",
         "stock_status": "In Stock",
     },
     "WSH-M8-STD": {
-        "estimated_unit_cost_usd": 0.06,
-        "supplier_source": "Industrial Supply Corp",
+        "estimated_unit_cost_usd": 5.00,
+        "supplier_source": "Madurai Engineering Supplies",
         "stock_status": "In Stock",
     },
 }
@@ -152,7 +158,7 @@ def calculate_procurement(
             total_cost += procurement_data["estimated_total_cost_usd"]
 
     return {
-        "currency": "USD",
+        "currency": "INR",
         "estimated_total_cost_usd": round(total_cost, 2),
         "items_with_price": items_with_price,
         "items_without_price": items_without_price,

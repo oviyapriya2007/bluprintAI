@@ -98,16 +98,13 @@ export async function processDrawing(file, { signal } = {}) {
 }
 
 /**
- * Request a generated export file (Excel or CSV) for an already-processed
- * workspace and return it as a Blob ready to hand to the browser's download
- * mechanism. `format` is "excel" or "csv".
+ * Request a generated Excel export for an already-processed workspace and
+ * return it as a Blob ready to hand to the browser's download mechanism.
  */
-export async function exportWorkspace(workspace, format) {
-  const path = format === "csv" ? "/export/csv" : "/export/excel";
-
+export async function exportWorkspace(workspace) {
   let response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${API_URL}/export/excel`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(workspace),

@@ -50,7 +50,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const data = useWorkspaceData();
   const [selectedPart, setSelectedPart] = useState(null);
-  const [exporting, setExporting] = useState(null); // null | "excel" | "csv"
+  const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
 
   useEffect(() => {
@@ -68,15 +68,15 @@ function Dashboard() {
   const metadata = workspace.metadata || {};
   const isDegraded = metadata.pipeline_status && metadata.pipeline_status !== "ok";
 
-  const handleExport = async (format) => {
-    setExporting(format);
+  const handleExport = async () => {
+    setExporting(true);
     setExportError(null);
     try {
-      const blob = await exportWorkspace(workspace, format);
+      const blob = await exportWorkspace(workspace);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = format === "csv" ? "BlueprintAI_BOM.csv" : "BlueprintAI_BOM.xlsx";
+      anchor.download = "BlueprintAI_BOM.xlsx";
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -84,7 +84,7 @@ function Dashboard() {
     } catch (err) {
       setExportError(err instanceof BlueprintApiError ? err.message : "Export failed.");
     } finally {
-      setExporting(null);
+      setExporting(false);
     }
   };
 
@@ -100,17 +100,10 @@ function Dashboard() {
         <div className="export-buttons">
           <button
             className="export-button"
-            onClick={() => handleExport("excel")}
-            disabled={exporting !== null}
+            onClick={handleExport}
+            disabled={exporting}
           >
-            {exporting === "excel" ? "Exporting..." : "↓ Export Excel"}
-          </button>
-          <button
-            className="export-button export-button-secondary"
-            onClick={() => handleExport("csv")}
-            disabled={exporting !== null}
-          >
-            {exporting === "csv" ? "Exporting..." : "↓ Export CSV"}
+            {exporting ? "Exporting..." : "↓ Export Excel"}
           </button>
         </div>
       </header>

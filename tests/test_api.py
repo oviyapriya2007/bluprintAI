@@ -74,15 +74,6 @@ class TestExportEndpoints(unittest.TestCase):
         self.assertIn("BlueprintAI_BOM.xlsx", response.headers["content-disposition"])
         self.assertGreater(len(response.content), 0)
 
-    def test_export_csv_returns_csv_file(self):
-        response = client.post("/export/csv", json=self.workspace)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("text/csv", response.headers["content-type"])
-        self.assertIn("BlueprintAI_BOM.csv", response.headers["content-disposition"])
-        body = response.content.decode("utf-8")
-        self.assertIn("Item Number", body)
-        self.assertIn("FB-M8-001", body)
-
     def test_export_rejects_non_workspace_body(self):
         response = client.post("/export/excel", json={"not": "a workspace"})
         self.assertEqual(response.status_code, 400)

@@ -39,7 +39,7 @@ class TestExport(unittest.TestCase):
             frame = pd.read_csv(result_path)
             self.assertEqual(len(frame), len(self.workspace["components"]))
             self.assertIn("Item Number", frame.columns)
-            self.assertIn("Estimated Total Cost", frame.columns)
+            self.assertIn("Estimated Total (₹)", frame.columns)
 
     def test_excel_export_with_no_components_does_not_crash(self):
         empty_workspace = build_workspace(bom_data=[], callout_data=[])

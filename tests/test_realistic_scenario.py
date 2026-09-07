@@ -169,8 +169,8 @@ class TestRealisticScenario(unittest.TestCase):
     def test_procurement_calculated_for_known_parts(self):
         component = self.components_by_item["1"]  # FB-M8-001 is in the mock catalog
         procurement = component["procurement_data"]
-        self.assertEqual(procurement["estimated_unit_cost_usd"], 0.45)
-        self.assertEqual(procurement["estimated_total_cost_usd"], 2.70)  # 6 * 0.45
+        self.assertEqual(procurement["estimated_unit_cost_usd"], 35.00)
+        self.assertEqual(procurement["estimated_total_cost_usd"], 210.00)  # 6 * 35.00
         self.assertTrue(procurement["estimated"])
 
     def test_procurement_summary_is_present(self):

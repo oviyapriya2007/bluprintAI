@@ -18,7 +18,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 HEADER_FILL = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
 HEADER_FONT = Font(color="FFFFFF", bold=True)
-CURRENCY_FORMAT = "$#,##0.00"
+CURRENCY_FORMAT = "₹#,##0.00"  # Indian Rupee (INR)
 PERCENT_FORMAT = "0%"
 
 BOM_COLUMNS = [
@@ -31,8 +31,8 @@ BOM_COLUMNS = [
     ("Revision", "revision", None, 10),
     ("Drawing Location", "location_description", None, 26),
     ("Confidence", "confidence_score", PERCENT_FORMAT, 12),
-    ("Estimated Unit Cost", "estimated_unit_cost_usd", CURRENCY_FORMAT, 16),
-    ("Estimated Total Cost", "estimated_total_cost_usd", CURRENCY_FORMAT, 16),
+    ("Unit Cost (₹)", "estimated_unit_cost_usd", CURRENCY_FORMAT, 16),
+    ("Estimated Total (₹)", "estimated_total_cost_usd", CURRENCY_FORMAT, 16),
     ("Supplier", "supplier_source", None, 22),
     ("Stock Status", "stock_status", None, 14),
 ]
@@ -41,8 +41,8 @@ PROCUREMENT_COLUMNS = [
     ("Item Number", 14),
     ("Part Name", 28),
     ("Quantity", 10),
-    ("Unit Price", 14),
-    ("Total Cost", 14),
+    ("Unit Cost (₹)", 16),
+    ("Estimated Total (₹)", 18),
     ("Supplier", 22),
     ("Availability", 16),
 ]

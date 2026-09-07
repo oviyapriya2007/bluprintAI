@@ -2,7 +2,7 @@ import StatusBadge from "./StatusBadge";
 
 function formatCurrency(value) {
   if (value === null || value === undefined) return "—";
-  return `$${Number(value).toFixed(2)}`;
+  return `₹${Number(value).toFixed(2)}`;
 }
 
 function PartDetails({ part }) {
@@ -85,11 +85,11 @@ function PartDetails({ part }) {
           <span className="details-label">Procurement</span>
           <div className="details-grid">
             <div className="detail-item">
-              <span>Unit Cost</span>
+              <span>Unit Cost (₹)</span>
               <strong>{formatCurrency(part.procurement.estimated_unit_cost_usd)}</strong>
             </div>
             <div className="detail-item">
-              <span>Estimated Total</span>
+              <span>Estimated Total (₹)</span>
               <strong>{formatCurrency(part.procurement.estimated_total_cost_usd)}</strong>
             </div>
             <div className="detail-item">

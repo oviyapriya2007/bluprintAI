@@ -16,12 +16,12 @@ class TestProcurement(unittest.TestCase):
         result = reconcile_bom_and_callouts(bom, [{"bubble_number": "1"}])
         summary = calculate_procurement(result.components)
         procurement = result.components[0].procurement_data
-        self.assertEqual(procurement["estimated_unit_cost_usd"], 0.45)
-        self.assertEqual(procurement["estimated_total_cost_usd"], 2.70)
+        self.assertEqual(procurement["estimated_unit_cost_usd"], 35.00)
+        self.assertEqual(procurement["estimated_total_cost_usd"], 210.00)
         self.assertTrue(procurement["estimated"])
         self.assertEqual(summary["items_with_price"], 1)
         self.assertEqual(summary["items_without_price"], 0)
-        self.assertAlmostEqual(summary["estimated_total_cost_usd"], 2.70)
+        self.assertAlmostEqual(summary["estimated_total_cost_usd"], 210.00)
 
     def test_missing_procurement_data_does_not_crash(self):
         bom = [{"item_number": "1", "part_number": "UNKNOWN-PART", "quantity": 2}]
@@ -47,7 +47,7 @@ class TestProcurement(unittest.TestCase):
         result = reconcile_bom_and_callouts(bom, [{"bubble_number": "1"}])
         calculate_procurement(result.components)
         procurement = result.components[0].procurement_data
-        self.assertEqual(procurement["estimated_unit_cost_usd"], 0.45)
+        self.assertEqual(procurement["estimated_unit_cost_usd"], 35.00)
         self.assertIsNone(procurement["estimated_total_cost_usd"])
 
     def test_zero_quantity_omits_total(self):
