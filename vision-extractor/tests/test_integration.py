@@ -1,6 +1,6 @@
-"""Optional live Gemini integration test.
+"""Optional live Claude Vision integration test.
 
-Skipped automatically unless a real GEMINI_API_KEY is present in the
+Skipped automatically unless a real ANTHROPIC_API_KEY is present in the
 environment, so the rest of the suite never needs network access or a key.
 """
 
@@ -9,8 +9,8 @@ import os
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    not os.getenv("GEMINI_API_KEY"),
-    reason="GEMINI_API_KEY not set; skipping live Gemini integration test",
+    not os.getenv("ANTHROPIC_API_KEY"),
+    reason="ANTHROPIC_API_KEY not set; skipping live Claude integration test",
 )
 
 

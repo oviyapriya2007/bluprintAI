@@ -40,7 +40,7 @@ def test_mock_data_is_json_serializable():
 
 def test_vision_extractor_uses_mock_when_env_forces_it(monkeypatch):
     monkeypatch.setenv("USE_MOCK", "true")
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     extractor = VisionExtractor()
     assert extractor.using_mock is True
 
@@ -50,7 +50,9 @@ def test_vision_extractor_uses_mock_when_env_forces_it(monkeypatch):
 
 
 def test_vision_extractor_defaults_to_mock_without_api_key(monkeypatch):
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    # Active provider is Claude (see config.py/extractor.py); the auto-mock
+    # fallback is keyed on ANTHROPIC_API_KEY, not GEMINI_API_KEY.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("USE_MOCK", raising=False)
     extractor = VisionExtractor()
     assert extractor.using_mock is True

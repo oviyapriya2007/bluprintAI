@@ -15,9 +15,9 @@ from typing import Optional, Union
 
 from PIL import Image
 
+from .claude_client import ClaudeVisionClient
 from .config import Settings, get_settings
-from .exceptions import GeminiAPIError, InvalidExtractionError, VisionExtractionError
-from .gemini_client import GeminiVisionClient
+from .exceptions import ClaudeAPIError, InvalidExtractionError, VisionExtractionError
 from .mock_data import build_mock_extraction_result
 from .models import ExtractionResult
 from .prompts import BOM_EXTRACTION_PROMPT, CALLOUT_DETECTION_PROMPT
@@ -32,24 +32,24 @@ class VisionExtractor:
 
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self._settings = settings or get_settings()
-        self._client: Optional[GeminiVisionClient] = None
+        self._client: Optional[ClaudeVisionClient] = None
 
         if not self._settings.use_mock:
             try:
-                self._client = GeminiVisionClient(
-                    api_key=self._settings.gemini_api_key,
-                    model=self._settings.gemini_model,
+                self._client = ClaudeVisionClient(
+                    api_key=self._settings.anthropic_api_key,
+                    model=self._settings.anthropic_model,
                 )
-            except GeminiAPIError as exc:
+            except ClaudeAPIError as exc:
                 logger.warning(
-                    "Falling back to mock mode: could not initialize Gemini client (%s)", exc
+                    "Falling back to mock mode: could not initialize Claude client (%s)", exc
                 )
                 self._client = None
 
         logger.info(
             "VisionExtractor initialized (mock=%s, model=%s)",
             self._client is None,
-            self._settings.gemini_model,
+            self._settings.anthropic_model,
         )
 
     @property
@@ -62,7 +62,7 @@ class VisionExtractor:
         Always returns an ExtractionResult, even on partial or total failure —
         errors are surfaced via extraction_warnings rather than raised, so one
         bad drawing never crashes a batch/demo. Falls back to deterministic
-        mock data if mock mode is enabled or the Gemini call fails outright.
+        mock data if mock mode is enabled or the Claude call fails outright.
         """
         try:
             pil_image, source_label = self._load_input_image(image)
@@ -76,17 +76,17 @@ class VisionExtractor:
         logger.info("Image received: %s (%dx%d)", source_label, width, height)
 
         if self.using_mock:
-            logger.info("USE_MOCK enabled or no Gemini client available; returning mock extraction")
+            logger.info("USE_MOCK enabled or no Claude client available; returning mock extraction")
             return build_mock_extraction_result()
 
-        return self._extract_with_gemini(pil_image, width, height)
+        return self._extract_with_claude(pil_image, width, height)
 
     def _load_input_image(self, image: Union[str, Path, Image.Image]) -> tuple[Image.Image, str]:
         if isinstance(image, Image.Image):
             return image.convert("RGB"), "<in-memory PIL.Image>"
         return load_image(image), str(image)
 
-    def _extract_with_gemini(
+    def _extract_with_claude(
         self, image: Image.Image, width: int, height: int
     ) -> ExtractionResult:
         warnings: list[str] = []
@@ -122,7 +122,7 @@ class VisionExtractor:
             logger.info("Starting BOM extraction request")
             raw_text = self._client.extract_bom(image, BOM_EXTRACTION_PROMPT)
             parsed = parse_json_response(raw_text)
-        except (GeminiAPIError, InvalidExtractionError) as exc:
+        except (ClaudeAPIError, InvalidExtractionError) as exc:
             warnings.append(f"BOM extraction failed: {exc}")
             logger.error("BOM extraction failed: %s", exc)
             return [], None, None
@@ -151,7 +151,7 @@ class VisionExtractor:
             logger.info("Starting callout detection request")
             raw_text = self._client.detect_callouts(image, CALLOUT_DETECTION_PROMPT)
             parsed = parse_json_response(raw_text)
-        except (GeminiAPIError, InvalidExtractionError) as exc:
+        except (ClaudeAPIError, InvalidExtractionError) as exc:
             warnings.append(f"Callout detection failed: {exc}")
             logger.error("Callout detection failed: %s", exc)
             return []

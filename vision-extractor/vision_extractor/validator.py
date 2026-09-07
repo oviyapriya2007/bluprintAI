@@ -1,4 +1,4 @@
-"""Turns raw Gemini JSON text into validated ExtractionResult data.
+"""Turns raw vision-model JSON text into validated ExtractionResult data.
 
 Pipeline: raw text -> JSON parsing -> per-item Pydantic validation ->
 normalization/cleanup -> ExtractionResult. Never trusts the model blindly:
@@ -28,7 +28,7 @@ def parse_json_response(raw_text: str) -> dict[str, Any]:
     Raises InvalidExtractionError if the text is empty or not valid JSON.
     """
     if not raw_text or not raw_text.strip():
-        raise InvalidExtractionError("Empty response from Gemini")
+        raise InvalidExtractionError("Empty response from vision model")
 
     cleaned = raw_text.strip()
     if cleaned.startswith("```"):
