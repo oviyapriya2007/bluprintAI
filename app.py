@@ -63,7 +63,7 @@ ALLOWED_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg"}
 @app.get("/health")
 def health() -> dict:
     """Liveness check, plus whether each pipeline stage is importable and
-    whether vision-extractor has a real Gemini key configured (mock vs live)."""
+    whether vision extraction is live, explicit mock, or misconfigured."""
     stage_status: dict[str, str] = {}
 
     try:
@@ -73,15 +73,28 @@ def health() -> dict:
     except Exception as exc:  # noqa: BLE001
         stage_status["document_processor"] = f"error: {exc}"
 
-    vision_mode = "unknown"
+    # "live" | "mock" | "error" — never report live when Claude cannot init.
+    vision_mode = "error"
     try:
         from vision_extractor import VisionExtractor
         from vision_extractor.config import get_settings
+        from vision_extractor.exceptions import VisionConfigurationError
 
-        stage_status["vision_extractor"] = "ok"
-        vision_mode = "mock" if get_settings().use_mock else "live"
+        settings = get_settings()
+        if settings.use_mock:
+            stage_status["vision_extractor"] = "ok"
+            vision_mode = "mock"
+        else:
+            try:
+                VisionExtractor(settings=settings)
+                stage_status["vision_extractor"] = "ok"
+                vision_mode = "live"
+            except VisionConfigurationError as exc:
+                stage_status["vision_extractor"] = f"error: {exc}"
+                vision_mode = "error"
     except Exception as exc:  # noqa: BLE001
         stage_status["vision_extractor"] = f"error: {exc}"
+        vision_mode = "error"
 
     try:
         from intelligence import build_workspace  # noqa: F401

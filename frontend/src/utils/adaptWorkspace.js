@@ -28,16 +28,21 @@ function validationRecordFor(workspace, componentId) {
 export function adaptWorkspaceToParts(workspace) {
   const components = workspace?.components || [];
 
-  return components.map((component) => {
+    return components.map((component) => {
     const record = validationRecordFor(workspace, component.id);
     const backendStatus = record?.status || "linked";
+    // Show the transcribed BOM description exactly — never a model-invented part_name.
+    const displayName =
+      (typeof component.description === "string" && component.description.trim()) ||
+      component.part_name ||
+      "(unidentified part)";
 
     return {
       id: component.id,
       item_number: component.item_number,
       bubble_number: component.bubble_number,
       part_number: component.part_number,
-      part_name: component.part_name || "(unidentified part)",
+      part_name: displayName,
       description: component.description,
       quantity: component.quantity,
       material_specification: component.material_specification,

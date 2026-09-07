@@ -28,6 +28,9 @@ document-processor/samples/**
 # Top-level pipeline demo output (regenerate with run_pipeline.py)
 /pipeline_output/
 
+# Temporary live-vision diagnostics dumps (see vision_extractor.diagnostics)
+/debug-output/
+
 # OS / editor junk
 .DS_Store
 Thumbs.db

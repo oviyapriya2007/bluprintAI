@@ -27,4 +27,5 @@ def test_live_extraction_returns_valid_result():
     extractor = VisionExtractor()
     result = extractor.extract_from_image(images[0])
     assert result is not None
+    assert result.extraction_source == "claude"
     assert isinstance(result.model_dump(), dict)

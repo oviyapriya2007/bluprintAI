@@ -227,13 +227,26 @@ def reconcile_bom_and_callouts(
                 normalize_identifier(raw_bubble_number) if callout_row else None
             ),
             part_number=bom_row.get("part_number"),
-            part_name=bom_row.get("part_name"),
+            # Prefer transcribed BOM description; fall back to legacy part_name
+            # only when description is absent (sample fixtures). Never invent.
+            part_name=(
+                bom_row.get("description")
+                if bom_row.get("description") not in (None, "")
+                else (bom_row.get("part_name") or None)
+            ),
             description=bom_row.get("description", "") or "",
             quantity=_safe_int(bom_row.get("quantity")),
-            material_specification=bom_row.get("material_specification"),
+            material_specification=(
+                bom_row.get("material_specification")
+                if bom_row.get("material_specification") is not None
+                else bom_row.get("material")
+            ),
             revision=bom_row.get("revision", "") or "",
             location_description=callout_row.get("location_description", "") or "",
-            bounding_box=_normalize_bounding_box(callout_row.get("bounding_box")),
+            # Vision callouts use bubble_bbox; accept legacy bounding_box too.
+            bounding_box=_normalize_bounding_box(
+                callout_row.get("bubble_bbox") or callout_row.get("bounding_box")
+            ),
             confidence_score=_combine_confidence(bom_confidence, callout_confidence),
             procurement_data={},
             link_status=link_status,

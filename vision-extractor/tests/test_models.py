@@ -1,7 +1,14 @@
 import pytest
 from pydantic import ValidationError
 
-from vision_extractor.models import BOMItem, BoundingBox, Callout, ExtractedComponent, ExtractionResult
+from vision_extractor.models import (
+    BOMItem,
+    BoundingBox,
+    Callout,
+    ExtractedComponent,
+    ExtractionResult,
+    LeaderEndpoint,
+)
 
 
 def test_bounding_box_valid():
@@ -41,10 +48,52 @@ def test_bom_item_rejects_confidence_out_of_range():
         BOMItem(item_number="1", confidence_score=1.5)
 
 
-def test_callout_requires_bounding_box():
+def test_callout_requires_bubble_bbox():
     box = BoundingBox(xmin=0, ymin=0, xmax=10, ymax=10)
-    callout = Callout(bubble_number="3", bounding_box=box, confidence_score=0.8)
+    callout = Callout(bubble_number="3", bubble_bbox=box, confidence_score=0.8)
     assert callout.bubble_number == "3"
+    assert callout.leader_line_status == "missing"
+    assert callout.leader_endpoint is None
+
+
+def test_callout_with_leader_endpoint():
+    box = BoundingBox(xmin=185, ymin=412, xmax=230, ymax=458)
+    callout = Callout(
+        bubble_number="3",
+        bubble_bbox=box,
+        confidence_score=0.94,
+        leader_endpoint=LeaderEndpoint(x=320, y=560),
+        leader_line_status="clear",
+        location_description="leader terminates on mounting bracket",
+    )
+    assert callout.leader_endpoint.x == 320
+    assert callout.leader_line_status == "clear"
+    dumped = callout.model_dump()
+    assert dumped["bubble_bbox"]["xmin"] == 185
+    assert "bounding_box" not in dumped
+
+
+def test_callout_unclear_discards_endpoint():
+    box = BoundingBox(xmin=0, ymin=0, xmax=10, ymax=10)
+    callout = Callout(
+        bubble_number="7",
+        bubble_bbox=box,
+        confidence_score=0.8,
+        leader_endpoint=LeaderEndpoint(x=50, y=50),
+        leader_line_status="unclear",
+    )
+    assert callout.leader_endpoint is None
+
+
+def test_callout_rejects_invalid_leader_status():
+    box = BoundingBox(xmin=0, ymin=0, xmax=10, ymax=10)
+    with pytest.raises(ValidationError):
+        Callout(
+            bubble_number="1",
+            bubble_bbox=box,
+            confidence_score=0.9,
+            leader_line_status="maybe",
+        )
 
 
 def test_extracted_component_full_contract_shape():

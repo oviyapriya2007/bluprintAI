@@ -7,112 +7,91 @@ engineering drawings are used for procurement/manufacturing decisions.
 """
 
 BOM_EXTRACTION_PROMPT = """\
-You are an expert mechanical/manufacturing engineer analyzing an engineering \
-drawing image to extract its Bill of Materials (BOM) / parts list / title block data.
+You are extracting a Bill of Materials from an engineering drawing.
 
-INSTRUCTIONS:
-1. Inspect the ENTIRE image carefully, including any parts list tables, BOM \
-tables, title blocks, and revision tables. These are often in a corner \
-(commonly bottom-right or top-right) but can appear anywhere.
-2. For each row in the BOM/parts list table, extract:
-   - item_number (the row's item/find number, e.g. "1", "2", "3A")
-   - part_number (manufacturer or internal part number, if present)
-   - part_name (the part's name/title)
-   - description (any additional descriptive text distinct from part_name)
-   - quantity (integer count required for the assembly)
-   - material_specification (material or spec callout, e.g. "Grade 8.8 Carbon Steel")
-   - revision (revision letter/number for that row, if shown)
-3. Also extract drawing-level metadata if visible: drawing_number and \
-overall revision (from the title block, NOT a BOM row).
-4. Read text EXACTLY as printed. Preserve capitalization, hyphens, and units.
-5. Carefully distinguish separate table rows from each other. Do not merge \
-two rows into one, and do not split one row into two.
-6. NEVER invent or guess a value that is not legible or not present in the \
-image. If a field cannot be determined, set it to null.
-7. Assign a confidence_score between 0.0 and 1.0 for each BOM row, reflecting \
-how certain you are about the values you extracted (low resolution, blur, \
-or partial occlusion should lower confidence).
-8. Be robust to: low resolution, tiny table text, multiple drawing views on \
-the same sheet, crowded/dense drawings, and title blocks that resemble BOM \
-tables but are not (do not confuse the title block's own metadata fields \
-with parts-list rows unless they clearly represent a BOM entry).
+Your task is transcription, not interpretation.
 
-OUTPUT FORMAT:
-Return ONLY valid JSON (no markdown fences, no commentary) matching exactly:
+Read ONLY the visible BOM / PARTS LIST table in this image.
+
+Rules:
+- Extract only rows that are visibly present in the table.
+- Do not infer part names from the drawing geometry.
+- Do not rename parts.
+- Do not normalize descriptions into more common engineering terms.
+- Do not invent missing rows.
+- Preserve the visible wording exactly as much as possible.
+- If a field is unreadable, return null.
+- If there is no visible BOM table, return an empty list.
+- Do not use general engineering knowledge to fill gaps.
+- Do NOT invent a separate part_name field. The transcribed table text for the \
+part belongs ONLY in description.
+- Do not create a component name outside bom_items[].description.
+
+Return ONLY JSON.
+
+Schema:
 {
-  "drawing_number": string or null,
-  "revision": string or null,
   "bom_items": [
     {
-      "item_number": string,
-      "part_number": string or null,
-      "part_name": string or null,
-      "description": string or null,
-      "quantity": integer or null,
-      "material_specification": string or null,
-      "revision": string or null,
-      "confidence_score": number between 0.0 and 1.0
+      "item_number": "1",
+      "part_number": "HB-M8-001",
+      "description": "Hexagon Head Bolt M8 x 25",
+      "material": "Carbon Steel",
+      "quantity": 4,
+      "confidence_score": 0.98
     }
   ]
 }
-If no BOM table is visible, return an empty "bom_items" array rather than \
-inventing rows.
+
+If no BOM table is visible, return {"bom_items": []}.
 """
 
 CALLOUT_DETECTION_PROMPT = """\
-You are an expert mechanical/manufacturing engineer analyzing an engineering \
-drawing image to detect numbered callout ("balloon"/"bubble") annotations.
+Detect numbered BOM callout balloons in this engineering drawing.
 
-INSTRUCTIONS:
-1. Inspect the ENTIRE drawing canvas, including all views, not just one area.
-2. Identify numbered callout bubbles: these are typically circles, ovals, or \
-flag shapes containing a single number, connected to a part or feature by a \
-leader line (a thin line, often with an arrow or dot at the part).
-3. For each bubble found, extract:
-   - bubble_number (the number/text inside the bubble, as printed)
-   - location_description (brief description of what it points to or where \
-     it is on the sheet, e.g. "top-left view, near flange bolt", if you can \
-     tell; otherwise null)
-   - bounding_box: the bubble's bounding box in NORMALIZED coordinates on a \
-     0-1000 scale for BOTH axes, where (0,0) is the top-left corner of the \
-     image and (1000,1000) is the bottom-right corner. Do NOT return raw \
-     pixel coordinates.
-       xmin/ymin = top-left corner of the bubble shape
-       xmax/ymax = bottom-right corner of the bubble shape
-   - confidence_score between 0.0 and 1.0 for how certain you are this is a \
-     genuine callout bubble at that exact location.
-4. DO NOT confuse the following with callout bubbles:
-   - Dimension values and dimension lines (numbers next to arrows measuring \
-     length/diameter/angle are dimensions, not callouts)
-   - Revision numbers/letters in the revision table or title block
-   - Section/view labels (e.g. "SECTION A-A", "VIEW B") unless they are \
-     inside a genuine numbered bubble shape
-   - Datum reference letters or GD&T frame contents
-5. Be robust to: low resolution, tiny bubble text, multiple views, crowded \
-drawings with many overlapping leader lines and dimension annotations.
-6. NEVER invent a callout that is not actually present in the image. If you \
-are unsure whether a mark is a callout bubble, either omit it or assign it a \
-low confidence_score rather than fabricating certainty.
+A valid callout balloon:
+- contains a visible item number
+- is a distinct circular or balloon-style annotation
+- is connected to the drawing by a leader line
+- is not a dimension
+- is not a section label
+- is not title-block text
+- is not a grid coordinate
+- is not ordinary geometry
 
-OUTPUT FORMAT:
-Return ONLY valid JSON (no markdown fences, no commentary) matching exactly:
+Return the bounding box of the BALLOON ONLY.
+
+Do not return the component location.
+Do not return the leader endpoint.
+Do not identify the component.
+Do not infer anything from nearby shapes.
+
+If you are not certain a mark is a real numbered callout balloon, omit it.
+
+Return only balloons with confidence >= 0.85.
+
+Coordinates must be normalized 0–1000.
+
+Field name is bubble_bbox — NEVER use bounding_box.
+
+Return ONLY JSON:
+
 {
   "callouts": [
     {
-      "bubble_number": string,
-      "location_description": string or null,
-      "bounding_box": {
-        "xmin": number (0-1000),
-        "ymin": number (0-1000),
-        "xmax": number (0-1000),
-        "ymax": number (0-1000)
+      "bubble_number": "1",
+      "bubble_bbox": {
+        "xmin": 100,
+        "ymin": 80,
+        "xmax": 140,
+        "ymax": 120
       },
-      "confidence_score": number between 0.0 and 1.0
+      "confidence_score": 0.96
     }
   ]
 }
-If no callout bubbles are visible, return an empty "callouts" array rather \
-than inventing any.
+
+If no valid callout balloons are visible, return {"callouts": []}.
 """
 
 DRAWING_METADATA_PROMPT = """\
@@ -128,4 +107,61 @@ Return ONLY valid JSON (no markdown fences, no commentary) matching exactly:
   "drawing_number": string or null,
   "revision": string or null
 }
+"""
+
+CALLOUT_VERIFICATION_PROMPT = """\
+Verify this previously detected engineering callout.
+
+You are given a crop containing a suspected numbered callout bubble.
+
+Check only:
+
+1. Is there actually a numbered callout bubble?
+2. What is the exact number?
+3. Is a leader line visibly connected to it?
+4. Can the leader line endpoint be seen?
+5. Does the proposed bubble bounding box surround the actual bubble?
+
+Do NOT invent a bubble, number, leader, or endpoint that is not clearly visible.
+Do NOT treat dimensions, notes, revision markers, weld symbols, section labels, \
+or ordinary circles as callouts.
+If the detection was hallucinated or ambiguous, mark it invalid.
+
+Proposed detection (for reference only — trust the image, not this text):
+- proposed_bubble_number: {proposed_bubble_number}
+- proposed_bubble_bbox (full-page 0–1000 coords): {proposed_bubble_bbox}
+
+Return ONLY valid JSON.
+
+If the detection is confirmed:
+
+{{
+  "valid": true,
+  "bubble_number": "3",
+  "leader_visible": true,
+  "endpoint_visible": true,
+  "bbox_surrounds_bubble": true,
+  "confidence_score": 0.96
+}}
+
+If any detection was hallucinated or ambiguous, return:
+
+{{
+  "valid": false,
+  "reason": "No clear leader line connected to the bubble"
+}}
+
+Rules for valid=false (examples of reasons):
+- "No numbered callout bubble visible in the crop"
+- "Bubble number is unreadable"
+- "No clear leader line connected to the bubble"
+- "Leader endpoint is not visible"
+- "Proposed bounding box does not surround the bubble"
+- "Suspected mark is a dimension/note/symbol, not a callout"
+
+If valid=true:
+- bubble_number must be the exact printed number
+- leader_visible / endpoint_visible / bbox_surrounds_bubble must be honest booleans
+- If bbox_surrounds_bubble is false, you MUST return valid=false instead
+- confidence_score is 0.0–1.0 for this verification
 """

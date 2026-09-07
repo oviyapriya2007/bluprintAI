@@ -398,6 +398,17 @@ tbody tr:hover {
   margin: 8px 0 0 18px;
 }
 
+.mock-extraction-banner {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* --- Blueprint overlays (all callouts, not just the selected one) --- */
 
 .blueprint-preview-unavailable {

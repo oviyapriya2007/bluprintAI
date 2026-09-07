@@ -19,7 +19,7 @@ function BomTable({ parts, selectedPart, onSelect }) {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Part</th>
+                <th>Description</th>
                 <th>Confidence</th>
                 <th>Status</th>
               </tr>

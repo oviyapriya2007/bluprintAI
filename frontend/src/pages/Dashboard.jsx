@@ -67,6 +67,7 @@ function Dashboard() {
   const issues = flattenValidationIssues(workspace);
   const metadata = workspace.metadata || {};
   const isDegraded = metadata.pipeline_status && metadata.pipeline_status !== "ok";
+  const isMockExtraction = metadata.extraction_source === "mock";
 
   const handleExport = async () => {
     setExporting(true);
@@ -109,6 +110,12 @@ function Dashboard() {
       </header>
 
       {exportError && <div className="upload-error dashboard-banner">{exportError}</div>}
+
+      {isMockExtraction && (
+        <div className="mock-extraction-banner" role="alert">
+          MOCK VISION DATA — results are not derived from the uploaded drawing.
+        </div>
+      )}
 
       {isDegraded && (
         <div className="pipeline-warning-banner">

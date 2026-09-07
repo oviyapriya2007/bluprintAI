@@ -14,7 +14,7 @@ function BomRow({ part, onSelect, isSelected }) {
       <td>{part.bubble_number ?? part.item_number ?? "—"}</td>
 
       <td>
-        <strong>{part.part_name}</strong>
+        <strong>{part.description?.trim() || part.part_name || "—"}</strong>
       </td>
 
       <td>{confidencePct === null ? "—" : `${confidencePct}%`}</td>

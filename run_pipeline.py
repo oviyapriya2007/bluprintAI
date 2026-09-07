@@ -89,6 +89,10 @@ def _empty_workspace(pipeline_status: str, stage: str, message: str, **extra_met
         "metadata": {
             "pipeline_status": pipeline_status,
             "pipeline_errors": [{"stage": stage, "message": message}],
+            "extraction_source": extra_metadata.pop("extraction_source", None),
+            "using_mock_vision_extraction": extra_metadata.pop(
+                "using_mock_vision_extraction", False
+            ),
             **extra_metadata,
         },
     }
@@ -103,17 +107,76 @@ def _resolve_page_path(relative_path: Optional[str]) -> Optional[Path]:
     return _DOCUMENT_PROCESSOR_DIR / relative_path
 
 
+def _page_debug_dir(document_id: str, page_id: str) -> Path:
+    """Per-page debug folder under ``debug-output/<document_id>/<page_id>/``.
+
+    Nested by page so multi-page docs do not overwrite each other's dumps.
+    """
+    return _ROOT / "debug-output" / document_id / page_id
+
+
+def _start_page_vision_diagnostics(
+    *,
+    document_id: str,
+    page,
+    full_page_path: Optional[Path],
+    bom_crop_path: Optional[Path],
+    callout_crop_path: Optional[Path],
+    using_crops: bool,
+):
+    """Create a live-vision diagnostics sink and save input image copies.
+
+    Returns None when diagnostics cannot be imported (should not happen in
+    normal installs). Never raises — diagnostics must not break the pipeline.
+    """
+    try:
+        from vision_extractor.diagnostics import LiveVisionDiagnostics
+    except ImportError:
+        return None
+
+    diag = LiveVisionDiagnostics(
+        out_dir=_page_debug_dir(document_id, page.page_id),
+        bom_source="crop" if using_crops else "full_page",
+        callout_source="crop" if using_crops else "full_page",
+    )
+    try:
+        diag.ensure_out_dir()
+        diag.set_full_page_image_meta(full_page_path)
+        if full_page_path is not None:
+            diag.save_image_copy(full_page_path, "vision_input_full.png")
+        if using_crops:
+            if bom_crop_path is not None:
+                diag.save_image_copy(bom_crop_path, "vision_input_bom.png")
+            if callout_crop_path is not None:
+                diag.save_image_copy(callout_crop_path, "vision_input_callouts.png")
+    except OSError:
+        # Still return the sink so response/JSON dumps can proceed if possible.
+        pass
+    return diag
+
+
+def _finalize_page_vision_diagnostics(diag, *, document_id: str, page_id: str) -> None:
+    if diag is None:
+        return
+    try:
+        diag.finalize(page_id=page_id, document_id=document_id)
+    except OSError:
+        pass
+
+
 def _remap_bbox_to_full_page(bbox: dict, region) -> dict:
-    """Remap a bounding box that Gemini reported normalized (0-1000) to an
+    """Remap a bounding box that the vision model reported normalized (0-1000) to an
     isolated *crop* back into the full page's own 0-1000 normalized space.
 
     vision-extractor always normalizes coordinates to the image it was
-    actually shown (see vision-extractor/README.md's coordinate-system
-    section). When that image is a drawing-region crop rather than the
+    actually shown. When that image is a drawing-region crop rather than the
     whole page, a callout's raw coordinates are relative to the crop, not
     the page -- ``region`` (the crop's own 0-1000 full-page-relative
     position, from document-processor's ProcessedPage.drawing_region) is
     what lets us convert one into the other.
+
+    Prefer ``remap_callout_coords_to_full_page`` for callout dicts (handles
+    ``bubble_bbox``). This helper remains for simple bbox-only remaps.
     """
     region_w = region.xmax - region.xmin
     region_h = region.ymax - region.ymin
@@ -123,6 +186,39 @@ def _remap_bbox_to_full_page(bbox: dict, region) -> dict:
         "xmax": region.xmin + (bbox["xmax"] / 1000) * region_w,
         "ymax": region.ymin + (bbox["ymax"] / 1000) * region_h,
     }
+
+
+def _remap_callouts_from_drawing_crop(
+    callouts: list[dict],
+    *,
+    drawing_region,
+    full_page_width: int,
+    full_page_height: int,
+) -> None:
+    """Convert crop-relative callout bboxes to full-page 0–1000 in place.
+
+    Uses crop_x / crop_y / crop_width / crop_height derived from the
+    normalized drawing region and the full-page pixel size. Frontend never
+    sees crop-relative coordinates.
+    """
+    from vision_extractor.coordinates import (
+        crop_pixels_from_normalized_region,
+        remap_callout_dict_from_crop,
+    )
+
+    crop_x, crop_y, crop_width, crop_height = crop_pixels_from_normalized_region(
+        drawing_region, full_page_width, full_page_height
+    )
+    for callout in callouts:
+        remap_callout_dict_from_crop(
+            callout,
+            crop_x=crop_x,
+            crop_y=crop_y,
+            crop_width=crop_width,
+            crop_height=crop_height,
+            full_page_width=full_page_width,
+            full_page_height=full_page_height,
+        )
 
 
 def run_pipeline(
@@ -217,17 +313,56 @@ def run_pipeline(
         )
 
     # --- Stage 2: Vision Extraction (Person 4) ------------------------------
-    extractor = VisionExtractor()
+    try:
+        from vision_extractor.exceptions import VisionConfigurationError
+
+        extractor = VisionExtractor()
+    except VisionConfigurationError as exc:
+        return _empty_workspace(
+            "failed",
+            "vision_extraction",
+            str(exc),
+            document_id=processed_doc.document_id,
+            original_filename=processed_doc.original_filename,
+            extraction_source=None,
+            using_mock_vision_extraction=False,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return _empty_workspace(
+            "failed",
+            "vision_extraction",
+            f"Unexpected error initializing vision extractor: {exc}",
+            document_id=processed_doc.document_id,
+            original_filename=processed_doc.original_filename,
+            extraction_source=None,
+            using_mock_vision_extraction=False,
+        )
+
     all_bom_items: list[dict] = []
     all_callouts: list[dict] = []
     extraction_warnings: list[str] = []
     pipeline_errors: list[dict] = []
     drawing_number: Optional[str] = None
     revision: Optional[str] = None
+    extraction_source = extractor.extraction_source
 
     for page in processed_doc.pages:
         title_block_path = _resolve_page_path(page.title_block_region_path)
         drawing_region_path = _resolve_page_path(page.drawing_region_path)
+        full_page_path = _resolve_page_path(page.image_path)
+        # Live-mode only: temporary diagnostics to locate load/model/parse/filter failures.
+        # Mock mode skips dumps so canned fixtures stay noise-free.
+        page_diag = None
+        if not extractor.using_mock:
+            page_diag = _start_page_vision_diagnostics(
+                document_id=processed_doc.document_id,
+                page=page,
+                full_page_path=full_page_path,
+                bom_crop_path=title_block_path,
+                callout_crop_path=drawing_region_path,
+                using_crops=bool(title_block_path and drawing_region_path),
+            )
+            extractor._diagnostics = page_diag
 
         if title_block_path and drawing_region_path:
             # Isolated regions available: route BOM extraction to the
@@ -235,8 +370,11 @@ def run_pipeline(
             # crop, so each Gemini call sees its target content at a much
             # higher effective resolution than a single downscaled full page.
             try:
+                if page_diag is not None:
+                    page_diag.record_mode = "bom"
                 title_result = extractor.extract_from_image(str(title_block_path))
                 title_data = title_result.model_dump()
+                extraction_source = title_data.get("extraction_source") or extraction_source
                 all_bom_items.extend(title_data["bom_items"])
                 extraction_warnings.extend(
                     f"{page.page_id} (title block): {warning}"
@@ -244,6 +382,23 @@ def run_pipeline(
                 )
                 drawing_number = drawing_number or title_data.get("drawing_number")
                 revision = revision or title_data.get("revision")
+            except VisionConfigurationError as exc:
+                # Live-mode config/image failures must never be softened into mock.
+                _finalize_page_vision_diagnostics(
+                    page_diag,
+                    document_id=processed_doc.document_id,
+                    page_id=page.page_id,
+                )
+                extractor._diagnostics = None
+                return _empty_workspace(
+                    "failed",
+                    "vision_extraction",
+                    f"{page.page_id} title-block extraction failed: {exc}",
+                    document_id=processed_doc.document_id,
+                    original_filename=processed_doc.original_filename,
+                    extraction_source=None,
+                    using_mock_vision_extraction=False,
+                )
             except Exception as exc:  # noqa: BLE001 -- never trust an upstream call blindly
                 pipeline_errors.append(
                     {
@@ -253,23 +408,43 @@ def run_pipeline(
                 )
 
             try:
+                if page_diag is not None:
+                    page_diag.record_mode = "callouts"
                 drawing_result = extractor.extract_from_image(str(drawing_region_path))
                 drawing_data = drawing_result.model_dump()
+                extraction_source = drawing_data.get("extraction_source") or extraction_source
                 callouts = drawing_data["callouts"]
                 # Mock mode ignores whatever image it's given and always
                 # returns the same canned, already-full-page-relative
                 # coordinates -- remapping those would corrupt them. Only
-                # real Gemini output is genuinely crop-relative.
+                # live vision output is genuinely crop-relative.
                 if not extractor.using_mock and page.drawing_region is not None:
-                    for callout in callouts:
-                        if callout.get("bounding_box"):
-                            callout["bounding_box"] = _remap_bbox_to_full_page(
-                                callout["bounding_box"], page.drawing_region
-                            )
+                    _remap_callouts_from_drawing_crop(
+                        callouts,
+                        drawing_region=page.drawing_region,
+                        full_page_width=page.width,
+                        full_page_height=page.height,
+                    )
                 all_callouts.extend(callouts)
                 extraction_warnings.extend(
                     f"{page.page_id} (drawing region): {warning}"
                     for warning in drawing_data["extraction_warnings"]
+                )
+            except VisionConfigurationError as exc:
+                _finalize_page_vision_diagnostics(
+                    page_diag,
+                    document_id=processed_doc.document_id,
+                    page_id=page.page_id,
+                )
+                extractor._diagnostics = None
+                return _empty_workspace(
+                    "failed",
+                    "vision_extraction",
+                    f"{page.page_id} drawing-region extraction failed: {exc}",
+                    document_id=processed_doc.document_id,
+                    original_filename=processed_doc.original_filename,
+                    extraction_source=None,
+                    using_mock_vision_extraction=False,
                 )
             except Exception as exc:  # noqa: BLE001
                 pipeline_errors.append(
@@ -278,20 +453,51 @@ def run_pipeline(
                         "message": f"{page.page_id} drawing-region extraction failed: {exc}",
                     }
                 )
+            _finalize_page_vision_diagnostics(
+                page_diag,
+                document_id=processed_doc.document_id,
+                page_id=page.page_id,
+            )
+            extractor._diagnostics = None
             continue
 
         # Fallback: no isolated regions for this page -- extract from the
         # whole normalized page image, as before.
-        image_path = _DOCUMENT_PROCESSOR_DIR / page.image_path
+        image_path = full_page_path or (_DOCUMENT_PROCESSOR_DIR / page.image_path)
         try:
+            if page_diag is not None:
+                page_diag.record_mode = "both"
             result = extractor.extract_from_image(str(image_path))
+        except VisionConfigurationError as exc:
+            _finalize_page_vision_diagnostics(
+                page_diag,
+                document_id=processed_doc.document_id,
+                page_id=page.page_id,
+            )
+            extractor._diagnostics = None
+            return _empty_workspace(
+                "failed",
+                "vision_extraction",
+                f"{page.page_id}: {exc}",
+                document_id=processed_doc.document_id,
+                original_filename=processed_doc.original_filename,
+                extraction_source=None,
+                using_mock_vision_extraction=False,
+            )
         except Exception as exc:  # noqa: BLE001
             pipeline_errors.append(
                 {"stage": "vision_extraction", "message": f"{page.page_id}: {exc}"}
             )
+            _finalize_page_vision_diagnostics(
+                page_diag,
+                document_id=processed_doc.document_id,
+                page_id=page.page_id,
+            )
+            extractor._diagnostics = None
             continue
 
         data = result.model_dump()
+        extraction_source = data.get("extraction_source") or extraction_source
         all_bom_items.extend(data["bom_items"])
         all_callouts.extend(data["callouts"])
         extraction_warnings.extend(
@@ -299,6 +505,12 @@ def run_pipeline(
         )
         drawing_number = drawing_number or data.get("drawing_number")
         revision = revision or data.get("revision")
+        _finalize_page_vision_diagnostics(
+            page_diag,
+            document_id=processed_doc.document_id,
+            page_id=page.page_id,
+        )
+        extractor._diagnostics = None
 
     if not all_bom_items and not all_callouts:
         pipeline_errors.append(
@@ -336,6 +548,7 @@ def run_pipeline(
             "pages_processed": len(processed_doc.pages),
             "drawing_number": drawing_number,
             "revision": revision,
+            "extraction_source": extraction_source,
             "using_mock_vision_extraction": extractor.using_mock,
             "extraction_warnings": extraction_warnings,
         }

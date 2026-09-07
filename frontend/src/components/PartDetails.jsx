@@ -26,7 +26,7 @@ function PartDetails({ part }) {
       <div className="part-details-header">
         <div>
           <span className="details-label">Selected Part</span>
-          <h2>{part.part_name}</h2>
+          <h2>{part.description?.trim() || part.part_name}</h2>
         </div>
 
         <StatusBadge status={part.status} />

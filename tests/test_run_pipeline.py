@@ -74,6 +74,7 @@ class TestRunPipelineHappyPath(unittest.TestCase):
         self.assertTrue(metadata["document_id"].startswith("doc_"))
         self.assertEqual(metadata["drawing_number"], "ASM-001")
         self.assertTrue(metadata["using_mock_vision_extraction"])
+        self.assertEqual(metadata["extraction_source"], "mock")
         self.assertEqual(metadata["pages_processed"], 1)
 
     def test_workspace_is_json_serializable(self):
@@ -161,11 +162,11 @@ class TestRunPipelineLiveGemini(unittest.TestCase):
         # so vision_extractor.config's .env loading has already happened.
         from vision_extractor.config import get_settings
 
-        cls._has_key = bool(get_settings().gemini_api_key)
+        cls._has_key = bool(get_settings().anthropic_api_key)
 
     def test_live_pipeline_run_does_not_crash(self):
         if not self._has_key:
-            self.skipTest("No GEMINI_API_KEY configured; skipping live Gemini pipeline test")
+            self.skipTest("No ANTHROPIC_API_KEY configured; skipping live Claude pipeline test")
 
         previous = {"USE_MOCK": os.environ.get("USE_MOCK")}
         os.environ["USE_MOCK"] = "false"
@@ -173,7 +174,7 @@ class TestRunPipelineLiveGemini(unittest.TestCase):
             # isolate_regions=False here: this test is a wiring smoke test
             # (does the live path complete without raising), not an
             # accuracy check -- region-isolation correctness is verified
-            # separately. Skipping it keeps this test to 2 Gemini calls
+            # separately. Skipping it keeps this test to 2 Claude calls
             # instead of 4, so routine test runs don't take minutes.
             workspace = run_pipeline(str(SAMPLE_DRAWING), isolate_regions=False)
         finally:
@@ -181,6 +182,7 @@ class TestRunPipelineLiveGemini(unittest.TestCase):
 
         self.assertIn(workspace["metadata"]["pipeline_status"], ("ok", "partial"))
         self.assertFalse(workspace["metadata"]["using_mock_vision_extraction"])
+        self.assertEqual(workspace["metadata"]["extraction_source"], "claude")
         json.dumps(workspace)  # must be JSON-serializable regardless of content
 
 

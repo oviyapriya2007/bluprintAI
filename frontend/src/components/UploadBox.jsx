@@ -63,6 +63,15 @@ function UploadBox() {
     setStageIndex(0);
     setError(null);
 
+    // Clear any previous workspace so stale mock/live results cannot linger
+    // if this upload fails or returns a different extraction source.
+    try {
+      sessionStorage.removeItem("blueprintai_workspace");
+      sessionStorage.removeItem("blueprintai_filename");
+    } catch {
+      /* sessionStorage unavailable -- not fatal */
+    }
+
     try {
       const workspace = await processDrawing(file);
       const imageUrl = file.type === "application/pdf" ? null : URL.createObjectURL(file);

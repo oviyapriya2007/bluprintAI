@@ -6,7 +6,7 @@ source image's pixel dimensions. See utils.normalize_bbox for conversion.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -56,11 +56,49 @@ class BOMItem(BaseModel):
         return value
 
 
+class LeaderEndpoint(BaseModel):
+    """Normalized (0-1000) point where a callout leader line terminates.
+
+    This is the component/target tip — never the bubble location.
+    """
+
+    x: float
+    y: float
+
+    @field_validator("x", "y")
+    @classmethod
+    def _within_normalized_range(cls, value: float) -> float:
+        if value < COORD_MIN or value > COORD_MAX:
+            raise ValueError(
+                f"coordinate {value} outside normalized range [{COORD_MIN}, {COORD_MAX}]"
+            )
+        return value
+
+
+LeaderLineStatus = Literal["clear", "unclear", "missing"]
+
+
 class Callout(BaseModel):
+    """A numbered callout bubble on the drawing.
+
+    ``bubble_bbox`` localizes the numbered bubble/circle ONLY.
+    ``leader_endpoint`` (when status is ``clear``) is where the leader
+    terminates. Vision extraction does not infer components from geometry.
+    """
+
     bubble_number: str
     location_description: Optional[str] = None
-    bounding_box: BoundingBox
+    bubble_bbox: BoundingBox
     confidence_score: float = Field(ge=0.0, le=1.0)
+    leader_endpoint: Optional[LeaderEndpoint] = None
+    leader_line_status: LeaderLineStatus = "missing"
+
+    @model_validator(mode="after")
+    def _leader_consistency(self) -> "Callout":
+        # Unclear/missing leaders must never carry an invented endpoint.
+        if self.leader_line_status in ("unclear", "missing"):
+            object.__setattr__(self, "leader_endpoint", None)
+        return self
 
 
 class ExtractedComponent(BaseModel):
@@ -89,3 +127,5 @@ class ExtractionResult(BaseModel):
     callouts: list[Callout] = Field(default_factory=list)
     components: list[ExtractedComponent] = Field(default_factory=list)
     extraction_warnings: list[str] = Field(default_factory=list)
+    # "mock" only when USE_MOCK=true; live Claude runs always use "claude".
+    extraction_source: Literal["claude", "mock"] = "claude"

@@ -11,9 +11,23 @@ Public API:
 
 import logging
 
-from .exceptions import GeminiAPIError, InvalidExtractionError, VisionExtractionError
+from .exceptions import (
+    ClaudeAPIError,
+    GeminiAPIError,
+    InvalidExtractionError,
+    VisionConfigurationError,
+    VisionExtractionError,
+)
 from .extractor import VisionExtractor
-from .models import BOMItem, BoundingBox, Callout, ExtractedComponent, ExtractionResult
+from .models import (
+    BOMItem,
+    BoundingBox,
+    Callout,
+    ExtractedComponent,
+    ExtractionResult,
+    LeaderEndpoint,
+    LeaderLineStatus,
+)
 
 # Library convention: don't configure handlers, just avoid "no handler found" warnings.
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -25,8 +39,12 @@ __all__ = [
     "Callout",
     "ExtractedComponent",
     "BoundingBox",
+    "LeaderEndpoint",
+    "LeaderLineStatus",
     "VisionExtractionError",
+    "VisionConfigurationError",
     "GeminiAPIError",
+    "ClaudeAPIError",
     "InvalidExtractionError",
 ]
 
