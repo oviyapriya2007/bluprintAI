@@ -1,0 +1,199 @@
+{
+  "drawing_number": "ASM-001",
+  "revision": "B",
+  "bom_items": [
+    {
+      "item_number": "1",
+      "part_number": "PL-6061-014",
+      "part_name": "Base Mounting Plate",
+      "description": "Machined aluminum base plate",
+      "quantity": 1,
+      "material_specification": "Aluminum 6061-T6",
+      "revision": null,
+      "confidence_score": 0.95
+    },
+    {
+      "item_number": "2",
+      "part_number": "SHCS-M6-025",
+      "part_name": "Socket Head Cap Screw M6x25",
+      "description": "Fastener, base to bracket",
+      "quantity": 8,
+      "material_specification": "Grade 12.9 Alloy Steel",
+      "revision": null,
+      "confidence_score": 0.92
+    },
+    {
+      "item_number": "3",
+      "part_number": "FB-M8-001",
+      "part_name": "Hexagonal Flange Bolt M8",
+      "description": "Flange bolt, bracket to frame",
+      "quantity": 6,
+      "material_specification": "Grade 8.8 Carbon Steel",
+      "revision": null,
+      "confidence_score": 0.97
+    },
+    {
+      "item_number": "4",
+      "part_number": "BRK-2210",
+      "part_name": "Support Bracket",
+      "description": "Welded steel support bracket, partially obscured in view",
+      "quantity": 2,
+      "material_specification": "Steel A36",
+      "revision": null,
+      "confidence_score": 0.58
+    },
+    {
+      "item_number": "5",
+      "part_number": "WSH-M8-STD",
+      "part_name": "Flat Washer M8",
+      "description": "Standard flat washer",
+      "quantity": 6,
+      "material_specification": "Stainless Steel 304",
+      "revision": null,
+      "confidence_score": 0.9
+    }
+  ],
+  "callouts": [
+    {
+      "bubble_number": "1",
+      "location_description": "Callout near Base Mounting Plate",
+      "bounding_box": {
+        "xmin": 120.0,
+        "ymin": 150.0,
+        "xmax": 210.0,
+        "ymax": 230.0
+      },
+      "confidence_score": 0.95
+    },
+    {
+      "bubble_number": "2",
+      "location_description": "Callout near Socket Head Cap Screw M6x25",
+      "bounding_box": {
+        "xmin": 340.0,
+        "ymin": 160.0,
+        "xmax": 400.0,
+        "ymax": 210.0
+      },
+      "confidence_score": 0.92
+    },
+    {
+      "bubble_number": "3",
+      "location_description": "Callout near Hexagonal Flange Bolt M8",
+      "bounding_box": {
+        "xmin": 185.0,
+        "ymin": 412.0,
+        "xmax": 230.0,
+        "ymax": 458.0
+      },
+      "confidence_score": 0.97
+    },
+    {
+      "bubble_number": "4",
+      "location_description": "Callout near Support Bracket",
+      "bounding_box": {
+        "xmin": 520.0,
+        "ymin": 300.0,
+        "xmax": 610.0,
+        "ymax": 380.0
+      },
+      "confidence_score": 0.58
+    },
+    {
+      "bubble_number": "5",
+      "location_description": "Callout near Flat Washer M8",
+      "bounding_box": {
+        "xmin": 650.0,
+        "ymin": 420.0,
+        "xmax": 690.0,
+        "ymax": 460.0
+      },
+      "confidence_score": 0.9
+    }
+  ],
+  "components": [
+    {
+      "id": "cmp_001",
+      "item_number": "1",
+      "bubble_number": "1",
+      "part_number": "PL-6061-014",
+      "part_name": "Base Mounting Plate",
+      "quantity": 1,
+      "material_specification": "Aluminum 6061-T6",
+      "confidence_score": 0.95,
+      "bounding_box": {
+        "xmin": 120.0,
+        "ymin": 150.0,
+        "xmax": 210.0,
+        "ymax": 230.0
+      }
+    },
+    {
+      "id": "cmp_002",
+      "item_number": "2",
+      "bubble_number": "2",
+      "part_number": "SHCS-M6-025",
+      "part_name": "Socket Head Cap Screw M6x25",
+      "quantity": 8,
+      "material_specification": "Grade 12.9 Alloy Steel",
+      "confidence_score": 0.92,
+      "bounding_box": {
+        "xmin": 340.0,
+        "ymin": 160.0,
+        "xmax": 400.0,
+        "ymax": 210.0
+      }
+    },
+    {
+      "id": "cmp_003",
+      "item_number": "3",
+      "bubble_number": "3",
+      "part_number": "FB-M8-001",
+      "part_name": "Hexagonal Flange Bolt M8",
+      "quantity": 6,
+      "material_specification": "Grade 8.8 Carbon Steel",
+      "confidence_score": 0.97,
+      "bounding_box": {
+        "xmin": 185.0,
+        "ymin": 412.0,
+        "xmax": 230.0,
+        "ymax": 458.0
+      }
+    },
+    {
+      "id": "cmp_004",
+      "item_number": "4",
+      "bubble_number": "4",
+      "part_number": "BRK-2210",
+      "part_name": "Support Bracket",
+      "quantity": 2,
+      "material_specification": "Steel A36",
+      "confidence_score": 0.58,
+      "bounding_box": {
+        "xmin": 520.0,
+        "ymin": 300.0,
+        "xmax": 610.0,
+        "ymax": 380.0
+      }
+    },
+    {
+      "id": "cmp_005",
+      "item_number": "5",
+      "bubble_number": "5",
+      "part_number": "WSH-M8-STD",
+      "part_name": "Flat Washer M8",
+      "quantity": 6,
+      "material_specification": "Stainless Steel 304",
+      "confidence_score": 0.9,
+      "bounding_box": {
+        "xmin": 650.0,
+        "ymin": 420.0,
+        "xmax": 690.0,
+        "ymax": 460.0
+      }
+    }
+  ],
+  "extraction_warnings": [
+    "Low confidence extraction for item 4 (confidence=0.58)",
+    "Result generated from mock data (USE_MOCK enabled or Gemini unavailable)"
+  ]
+}
