@@ -1,0 +1,532 @@
+{
+  "components": [
+    {
+      "id": "cmp_001",
+      "item_number": "1",
+      "bubble_number": "1",
+      "part_number": "FB-M8-001",
+      "part_name": "Hexagonal Flange Bolt M8",
+      "description": "",
+      "quantity": 6,
+      "material_specification": "Grade 8.8 Carbon Steel",
+      "revision": "",
+      "location_description": "Upper-left mounting bracket",
+      "bounding_box": {
+        "xmin": 185.0,
+        "ymin": 412.0,
+        "xmax": 230.0,
+        "ymax": 458.0
+      },
+      "confidence_score": 0.95,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 0.45,
+        "estimated_total_cost_usd": 2.7,
+        "supplier_source": "Industrial Supply Corp",
+        "stock_status": "In Stock",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_002",
+      "item_number": "2",
+      "bubble_number": "2",
+      "part_number": "WSH-M8-002",
+      "part_name": "Flat Washer M8",
+      "description": "",
+      "quantity": 12,
+      "material_specification": "Zinc-Plated Steel",
+      "revision": "",
+      "location_description": "Adjacent to bolt callout 1",
+      "bounding_box": {
+        "xmin": 240.0,
+        "ymin": 412.0,
+        "xmax": 285.0,
+        "ymax": 458.0
+      },
+      "confidence_score": 0.93,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 0.08,
+        "estimated_total_cost_usd": 0.96,
+        "supplier_source": "Industrial Supply Corp",
+        "stock_status": "In Stock",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_003",
+      "item_number": "3",
+      "bubble_number": "3",
+      "part_number": "BRK-STD-100",
+      "part_name": "Standard Mounting Bracket",
+      "description": "",
+      "quantity": 2,
+      "material_specification": "6061 Aluminum",
+      "revision": "",
+      "location_description": "Center bracket mount",
+      "bounding_box": {
+        "xmin": 300.0,
+        "ymin": 400.0,
+        "xmax": 350.0,
+        "ymax": 445.0
+      },
+      "confidence_score": 0.96,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 12.75,
+        "estimated_total_cost_usd": 25.5,
+        "supplier_source": "MetalWorks Fabrication",
+        "stock_status": "In Stock",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_004",
+      "item_number": "4",
+      "bubble_number": "4",
+      "part_number": "BRG-6202-Z",
+      "part_name": "Ball Bearing 6202-Z",
+      "description": "",
+      "quantity": 4,
+      "material_specification": "Chrome Steel",
+      "revision": "",
+      "location_description": "Lower shaft assembly",
+      "bounding_box": {
+        "xmin": 150.0,
+        "ymin": 520.0,
+        "xmax": 200.0,
+        "ymax": 565.0
+      },
+      "confidence_score": 0.55,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 3.2,
+        "estimated_total_cost_usd": 12.8,
+        "supplier_source": "Precision Bearings Inc",
+        "stock_status": "Low Stock",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_005",
+      "item_number": "5",
+      "bubble_number": "5",
+      "part_number": "CUST-PLATE-099",
+      "part_name": "Custom Mounting Plate",
+      "description": "",
+      "quantity": 3,
+      "material_specification": null,
+      "revision": "",
+      "location_description": "Right side custom mount",
+      "bounding_box": {
+        "xmin": 400.0,
+        "ymin": 300.0,
+        "xmax": 450.0,
+        "ymax": 345.0
+      },
+      "confidence_score": 0.89,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No supplier pricing found for part number 'CUST-PLATE-099'."
+      }
+    },
+    {
+      "id": "cmp_006",
+      "item_number": "6",
+      "bubble_number": "6",
+      "part_number": "GSK-RUB-045",
+      "part_name": "Rubber Gasket",
+      "description": "",
+      "quantity": 8,
+      "material_specification": "Nitrile Rubber",
+      "revision": "",
+      "location_description": "Gasket seal area",
+      "bounding_box": {
+        "xmin": 260.0,
+        "ymin": 300.0,
+        "xmax": 300.0,
+        "ymax": 340.0
+      },
+      "confidence_score": 0.92,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 1.1,
+        "estimated_total_cost_usd": 8.8,
+        "supplier_source": "SealTech Components",
+        "stock_status": "In Stock",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_007",
+      "item_number": "7",
+      "bubble_number": "7",
+      "part_number": "SHF-ST-303",
+      "part_name": "Drive Shaft",
+      "description": "",
+      "quantity": 1,
+      "material_specification": "Stainless Steel 303",
+      "revision": "",
+      "location_description": "Drive shaft coupling",
+      "bounding_box": {
+        "xmin": 500.0,
+        "ymin": 250.0,
+        "xmax": 545.0,
+        "ymax": 295.0
+      },
+      "confidence_score": 0.93,
+      "procurement_data": {
+        "estimated_unit_cost_usd": 8.5,
+        "estimated_total_cost_usd": 8.5,
+        "supplier_source": "MetalWorks Fabrication",
+        "stock_status": "Backordered",
+        "estimated": true,
+        "mock_data": true,
+        "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+      }
+    },
+    {
+      "id": "cmp_008",
+      "item_number": "10",
+      "bubble_number": "10",
+      "part_number": "PIN-DWL-020",
+      "part_name": "Dowel Pin",
+      "description": "",
+      "quantity": null,
+      "material_specification": "Steel",
+      "revision": "",
+      "location_description": "Dowel pin location",
+      "bounding_box": {
+        "xmin": 90.0,
+        "ymin": 180.0,
+        "xmax": 130.0,
+        "ymax": 220.0
+      },
+      "confidence_score": 0.88,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No supplier pricing found for part number 'PIN-DWL-020'."
+      }
+    },
+    {
+      "id": "cmp_009",
+      "item_number": "6",
+      "bubble_number": null,
+      "part_number": "GSK-RUB-045-ALT",
+      "part_name": "Rubber Gasket (Rev B)",
+      "description": "",
+      "quantity": 8,
+      "material_specification": "Nitrile Rubber",
+      "revision": "",
+      "location_description": "",
+      "bounding_box": null,
+      "confidence_score": 0.9,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No supplier pricing found for part number 'GSK-RUB-045-ALT'."
+      }
+    },
+    {
+      "id": "cmp_010",
+      "item_number": "9",
+      "bubble_number": null,
+      "part_number": "SCR-M4-010",
+      "part_name": "Socket Head Screw M4x10",
+      "description": "",
+      "quantity": 10,
+      "material_specification": "Grade 8.8 Carbon Steel",
+      "revision": "",
+      "location_description": "",
+      "bounding_box": null,
+      "confidence_score": 0.91,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No supplier pricing found for part number 'SCR-M4-010'."
+      }
+    },
+    {
+      "id": "cmp_011",
+      "item_number": null,
+      "bubble_number": "7",
+      "part_number": null,
+      "part_name": null,
+      "description": "",
+      "quantity": null,
+      "material_specification": null,
+      "revision": "",
+      "location_description": "Drive shaft coupling (mislabeled duplicate)",
+      "bounding_box": {
+        "xmin": 505.0,
+        "ymin": 255.0,
+        "xmax": 550.0,
+        "ymax": 300.0
+      },
+      "confidence_score": 0.85,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No part number available for pricing lookup."
+      }
+    },
+    {
+      "id": "cmp_012",
+      "item_number": null,
+      "bubble_number": "14",
+      "part_number": null,
+      "part_name": null,
+      "description": "",
+      "quantity": null,
+      "material_specification": null,
+      "revision": "",
+      "location_description": "Unidentified fastener, bottom edge",
+      "bounding_box": {
+        "xmin": 610.0,
+        "ymin": 600.0,
+        "xmax": 650.0,
+        "ymax": 640.0
+      },
+      "confidence_score": 0.8,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No part number available for pricing lookup."
+      }
+    },
+    {
+      "id": "cmp_013",
+      "item_number": null,
+      "bubble_number": null,
+      "part_number": "AMB-000",
+      "part_name": "Ambiguous Label Part",
+      "description": "",
+      "quantity": 1,
+      "material_specification": null,
+      "revision": "",
+      "location_description": "",
+      "bounding_box": null,
+      "confidence_score": null,
+      "procurement_data": {
+        "estimated_unit_cost_usd": null,
+        "estimated_total_cost_usd": null,
+        "supplier_source": null,
+        "stock_status": "unknown",
+        "estimated": true,
+        "mock_data": true,
+        "note": "No supplier pricing found for part number 'AMB-000'."
+      }
+    }
+  ],
+  "validation": {
+    "summary": {
+      "total_bom_items": 11,
+      "total_callouts": 10,
+      "linked_items": 8,
+      "missing_callouts": 2,
+      "missing_bom_items": 2,
+      "low_confidence_items": 1,
+      "duplicate_bom_items": 2,
+      "duplicate_callouts": 2,
+      "ambiguous_identifiers": 1,
+      "review_required_items": 5,
+      "invalid_items": 1,
+      "confidence_threshold": 0.75
+    },
+    "issues": [
+      {
+        "component_id": "cmp_001",
+        "issues": [],
+        "status": "linked"
+      },
+      {
+        "component_id": "cmp_002",
+        "issues": [],
+        "status": "linked"
+      },
+      {
+        "component_id": "cmp_003",
+        "issues": [],
+        "status": "linked"
+      },
+      {
+        "component_id": "cmp_004",
+        "issues": [
+          {
+            "type": "low_confidence",
+            "severity": "warning",
+            "message": "Combined confidence 0.55 is below the review threshold of 0.75."
+          }
+        ],
+        "status": "review_required"
+      },
+      {
+        "component_id": "cmp_005",
+        "issues": [
+          {
+            "type": "missing_field",
+            "severity": "info",
+            "message": "Material specification is missing."
+          }
+        ],
+        "status": "review_required"
+      },
+      {
+        "component_id": "cmp_006",
+        "issues": [
+          {
+            "type": "duplicate_bom_item",
+            "severity": "error",
+            "message": "Item number 6 appears more than once in the BOM."
+          }
+        ],
+        "status": "review_required"
+      },
+      {
+        "component_id": "cmp_007",
+        "issues": [
+          {
+            "type": "duplicate_callout",
+            "severity": "error",
+            "message": "Bubble number 7 appears more than once on the drawing."
+          }
+        ],
+        "status": "review_required"
+      },
+      {
+        "component_id": "cmp_008",
+        "issues": [
+          {
+            "type": "missing_field",
+            "severity": "warning",
+            "message": "Quantity is missing."
+          }
+        ],
+        "status": "review_required"
+      },
+      {
+        "component_id": "cmp_009",
+        "issues": [
+          {
+            "type": "missing_callout",
+            "severity": "error",
+            "message": "BOM item 6 has no matching drawing callout."
+          },
+          {
+            "type": "duplicate_bom_item",
+            "severity": "error",
+            "message": "Item number 6 appears more than once in the BOM."
+          }
+        ],
+        "status": "missing_callout"
+      },
+      {
+        "component_id": "cmp_010",
+        "issues": [
+          {
+            "type": "missing_callout",
+            "severity": "error",
+            "message": "BOM item 9 has no matching drawing callout."
+          }
+        ],
+        "status": "missing_callout"
+      },
+      {
+        "component_id": "cmp_011",
+        "issues": [
+          {
+            "type": "missing_bom_item",
+            "severity": "error",
+            "message": "Drawing bubble 7 has no matching BOM item."
+          },
+          {
+            "type": "duplicate_callout",
+            "severity": "error",
+            "message": "Bubble number 7 appears more than once on the drawing."
+          }
+        ],
+        "status": "missing_bom_item"
+      },
+      {
+        "component_id": "cmp_012",
+        "issues": [
+          {
+            "type": "missing_bom_item",
+            "severity": "error",
+            "message": "Drawing bubble 14 has no matching BOM item."
+          }
+        ],
+        "status": "missing_bom_item"
+      },
+      {
+        "component_id": "cmp_013",
+        "issues": [
+          {
+            "type": "ambiguous_identifier",
+            "severity": "error",
+            "message": "Identifier 'Item 3-4' could not be normalized to a single unambiguous number and was not auto-matched."
+          }
+        ],
+        "status": "invalid"
+      }
+    ]
+  },
+  "procurement_summary": {
+    "currency": "USD",
+    "estimated_total_cost_usd": 59.26,
+    "items_with_price": 6,
+    "items_without_price": 7,
+    "estimated": true,
+    "mock_data": true,
+    "note": "Mock/estimated procurement data for demonstration purposes only. Not a real quotation."
+  },
+  "metadata": {
+    "schema_version": "1.0",
+    "generated_at": "2026-09-07T07:01:30.883096+00:00",
+    "generated_by": "intelligence (Person 5) module",
+    "total_components": 13,
+    "confidence_threshold": 0.75,
+    "duplicate_item_numbers": [
+      "6"
+    ],
+    "duplicate_bubble_numbers": [
+      "7"
+    ],
+    "ambiguous_bom_identifiers": [
+      "Item 3-4"
+    ],
+    "ambiguous_callout_identifiers": []
+  }
+}
