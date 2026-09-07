@@ -1,7 +1,11 @@
 # BlueprintAI backend API (app.py) dependencies.
 # Each module keeps its own requirements.txt (document-processor/,
-# vision-extractor/, intelligence/) -- install those too, or use .venv
-# in this project root, which already has everything installed.
+# vision-extractor/, intelligence/, backend/) -- install those too, or use
+# .venv in this project root, which already has everything installed.
+# backend/ is the hybrid detection pipeline (PIPELINE_MODE=hybrid, the
+# default) that run_pipeline.py now routes through instead of
+# vision-extractor's whole-page Claude vision pipeline (PIPELINE_MODE=legacy).
 fastapi>=0.110
 uvicorn[standard]>=0.29
 python-multipart>=0.0.9
+openpyxl<=3.1.5

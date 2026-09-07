@@ -23,9 +23,19 @@ SAMPLE_DRAWING = ROOT / "vision-extractor" / "examples" / "sample_input" / "samp
 
 def _force_mock_mode() -> dict[str, str | None]:
     """Set USE_MOCK=true for the duration of a test class; return the
-    previous env values so they can be restored exactly."""
-    previous = {"USE_MOCK": os.environ.get("USE_MOCK")}
+    previous env values so they can be restored exactly.
+
+    Also pins PIPELINE_MODE=legacy: these tests specifically exercise the
+    original document-processor -> vision-extractor -> intelligence chain
+    (asserting vision-extractor's exact mock fixture output), which is no
+    longer the default now that PIPELINE_MODE=hybrid is (see backend/).
+    """
+    previous = {
+        "USE_MOCK": os.environ.get("USE_MOCK"),
+        "PIPELINE_MODE": os.environ.get("PIPELINE_MODE"),
+    }
     os.environ["USE_MOCK"] = "true"
+    os.environ["PIPELINE_MODE"] = "legacy"
     return previous
 
 
@@ -168,8 +178,12 @@ class TestRunPipelineLiveGemini(unittest.TestCase):
         if not self._has_key:
             self.skipTest("No ANTHROPIC_API_KEY configured; skipping live Claude pipeline test")
 
-        previous = {"USE_MOCK": os.environ.get("USE_MOCK")}
+        previous = {
+            "USE_MOCK": os.environ.get("USE_MOCK"),
+            "PIPELINE_MODE": os.environ.get("PIPELINE_MODE"),
+        }
         os.environ["USE_MOCK"] = "false"
+        os.environ["PIPELINE_MODE"] = "legacy"  # this test targets vision-extractor specifically
         try:
             # isolate_regions=False here: this test is a wiring smoke test
             # (does the live path complete without raising), not an

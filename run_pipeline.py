@@ -275,6 +275,24 @@ def run_pipeline(
             "failed", "input", f"file_path must be a non-empty string, got: {file_path!r}"
         )
 
+    # PIPELINE_MODE=hybrid (default) routes through the deterministic
+    # CV/OCR + narrow-Claude-classification pipeline in backend/ instead
+    # of the legacy whole-page vision-only extraction below.
+    # PIPELINE_MODE=legacy keeps the original path for rollback/comparison.
+    # Imported lazily (not at module level) to avoid a circular import --
+    # backend/pipeline.py imports `intelligence` the same way this module
+    # does, but does not import run_pipeline.py itself.
+    from backend.config import get_settings as _get_backend_settings
+
+    if _get_backend_settings().pipeline_mode == "hybrid":
+        from backend.pipeline import run_hybrid_pipeline
+
+        return run_hybrid_pipeline(
+            file_path,
+            procurement_data=procurement_data,
+            confidence_threshold=confidence_threshold,
+        )
+
     try:
         from processor import process_document
     except ImportError as exc:
@@ -543,6 +561,7 @@ def run_pipeline(
         {
             "pipeline_status": status,
             "pipeline_errors": pipeline_errors,
+            "pipeline_mode": "legacy",
             "document_id": processed_doc.document_id,
             "original_filename": processed_doc.original_filename,
             "pages_processed": len(processed_doc.pages),
