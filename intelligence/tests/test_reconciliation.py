@@ -84,15 +84,37 @@ class TestReconciliation(unittest.TestCase):
         statuses = sorted(c.link_status for c in result.components)
         self.assertEqual(statuses, ["bom_only", "matched"])
 
-    def test_duplicate_callout(self):
+    def test_repeated_callout_for_one_bom_row_is_not_a_duplicate(self):
+        # One BOM row commonly covers several physically identical
+        # instances, each individually balloon-labeled with the same
+        # number (e.g. 4 identical bolts, each with its own "7" balloon,
+        # one "Hex Bolt" BOM line). That's an expected drawing
+        # convention -- every callout matches the same BOM row, and none
+        # of it is flagged as a duplicate or left unmatched.
         bom = [{"item_number": "7", "part_number": "A"}]
         callouts = [{"bubble_number": "7"}, {"bubble_number": "7"}]
         result = reconcile_bom_and_callouts(bom, callouts)
-        self.assertIn("7", result.duplicate_bubble_numbers)
+        self.assertNotIn("7", result.duplicate_bubble_numbers)
         flagged = [c for c in result.components if c.duplicate_bubble_number]
-        self.assertEqual(len(flagged), 2)
+        self.assertEqual(flagged, [])
         statuses = sorted(c.link_status for c in result.components)
-        self.assertEqual(statuses, ["callout_only", "matched"])
+        self.assertEqual(statuses, ["matched", "matched"])
+        self.assertTrue(all(c.item_number == "7" for c in result.components))
+
+    def test_ambiguous_duplicate_on_both_sides_is_still_flagged(self):
+        # Two BOM rows *and* two callouts sharing a number is genuinely
+        # ambiguous which pairs with which -- unlike the one-BOM-row case
+        # above, this still gets the old duplicate treatment on both sides.
+        bom = [
+            {"item_number": "8", "part_number": "A"},
+            {"item_number": "8", "part_number": "B"},
+        ]
+        callouts = [{"bubble_number": "8"}, {"bubble_number": "8"}, {"bubble_number": "8"}]
+        result = reconcile_bom_and_callouts(bom, callouts)
+        self.assertIn("8", result.duplicate_item_numbers)
+        self.assertIn("8", result.duplicate_bubble_numbers)
+        statuses = sorted(c.link_status for c in result.components)
+        self.assertEqual(statuses, ["callout_only", "matched", "matched"])
 
     def test_ambiguous_identifier_is_not_matched(self):
         bom = [{"item_number": "Item 3-4", "part_number": "AMB"}]

@@ -75,6 +75,44 @@ DEFAULT_PROCUREMENT_CATALOG: dict[str, dict] = {
         "supplier_source": "Madurai Engineering Supplies",
         "stock_status": "In Stock",
     },
+    # Parts from the "Bearing Housing Assembly" sample drawing used to
+    # develop/verify the backend/ hybrid pipeline (document-processor's
+    # own vision-extractor/examples fixture and ad hoc test uploads).
+    "HB-M8-001": {
+        "estimated_unit_cost_usd": 8.00,
+        "supplier_source": "Chennai Fastener Works",
+        "stock_status": "In Stock",
+    },
+    "WS-M8-001": {
+        "estimated_unit_cost_usd": 3.00,
+        "supplier_source": "Coimbatore Precision Components",
+        "stock_status": "In Stock",
+    },
+    "BH-001": {
+        "estimated_unit_cost_usd": 420.00,
+        "supplier_source": "Salem Metal Fabricators",
+        "stock_status": "In Stock",
+    },
+    "BR-6204": {
+        "estimated_unit_cost_usd": 260.00,
+        "supplier_source": "Tiruchirappalli Bearing Traders",
+        "stock_status": "In Stock",
+    },
+    "SH-001": {
+        "estimated_unit_cost_usd": 150.00,
+        "supplier_source": "Hosur Precision Engineering",
+        "stock_status": "In Stock",
+    },
+    "EC-001": {
+        "estimated_unit_cost_usd": 180.00,
+        "supplier_source": "Salem Metal Fabricators",
+        "stock_status": "Low Stock",
+    },
+    "NT-M8-001": {
+        "estimated_unit_cost_usd": 4.00,
+        "supplier_source": "Chennai Fastener Works",
+        "stock_status": "In Stock",
+    },
 }
 
 

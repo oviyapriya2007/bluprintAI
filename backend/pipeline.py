@@ -134,7 +134,7 @@ def _bom_row_to_bom_data(row: dict) -> dict:
     description, ...}`` contract shape (contracts/README.md)."""
     return {
         "item_number": row.get("item_no"),
-        "part_number": None,
+        "part_number": row.get("part_number"),
         "part_name": None,
         "description": row.get("description") or "",
         "quantity": row.get("qty"),
@@ -237,14 +237,26 @@ def run_hybrid_pipeline(
 
     for page in doc.pages:
         # --- Stage 2: deterministic BOM extraction ----------------------
-        bom_image_target = page.title_block_region_path or page.image_path
+        # Always hand bom_extract the *full page*, not the isolated
+        # title-block crop. document-processor's region heuristic assumes
+        # the BOM/parts list lives inside the same bottom-right box as the
+        # drawing's title-block metadata (TITLE/DWG NO./REV) -- on drawings
+        # where the parts list is a separate table elsewhere on the sheet
+        # (common), that crop contains no real table at all, yet can still
+        # OCR into one deceptive garbage row (e.g. misreading "DWG NO.:
+        # A-1001" as item_no "1001") -- deceptive because it's non-empty,
+        # so a "retry only if empty" fallback never kicks in. bom_extract's
+        # own _find_table_regions already locates and ranks ruled-table
+        # regions across the whole page (real parts list before a smaller
+        # title-block grid), which supersedes what the crop could offer.
         try:
-            bom_rows = bom_extract.extract_bom(file_path, page.page_number, bom_image_target)
+            bom_rows = bom_extract.extract_bom(file_path, page.page_number, page.image_path)
         except Exception as exc:  # noqa: BLE001
             pipeline_errors.append(
                 {"stage": "bom_extract", "message": f"{page.page_id}: {exc}"}
             )
             bom_rows = []
+
         raw_bom_rows.extend(bom_rows)
         all_bom_data.extend(_bom_row_to_bom_data(row) for row in bom_rows)
 

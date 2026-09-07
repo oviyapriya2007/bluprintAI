@@ -12,7 +12,12 @@ import unittest
 
 import numpy as np
 
-from backend.callout_detect import _calibrate_radius_range, _padded_bbox, detect_callouts
+from backend.callout_detect import (
+    _calibrate_min_circularity,
+    _calibrate_radius_range,
+    _padded_bbox,
+    detect_callouts,
+)
 from backend.config import PipelineSettings
 
 
@@ -61,6 +66,35 @@ class TestCalibrateRadiusRange(unittest.TestCase):
         median = 12.0
         self.assertAlmostEqual(low, max(10.0, median * 0.4))
         self.assertLess(high, 80.0 * 3)  # outlier does not blow out the ceiling
+
+
+class TestCalibrateMinCircularity(unittest.TestCase):
+    def test_falls_back_to_config_default_with_few_candidates(self):
+        loose = [(0.0, (0, 0), 12.0, 0.95)]
+        self.assertEqual(_calibrate_min_circularity(loose, _settings()), 0.6)
+
+    def test_finds_the_real_gap_between_balloon_and_noise_clusters(self):
+        # Reproduces the real-world distribution this fix addresses: real
+        # balloons cluster at high, consistent circularity; false
+        # positives (dimension lines, occluded holes, text strokes)
+        # cluster lower with a wide gap in between.
+        noise = [0.60, 0.61, 0.62, 0.62, 0.65, 0.66, 0.67, 0.71, 0.78]
+        balloons = [0.93, 0.94, 0.94, 0.95, 0.95]
+        loose = [(0.0, (0, 0), 20.0, c) for c in noise + balloons]
+        threshold = _calibrate_min_circularity(loose, _settings())
+        self.assertGreater(threshold, 0.78)
+        self.assertLess(threshold, 0.93)
+
+    def test_uniform_distribution_falls_back_to_default(self):
+        circularities = [0.60 + i * 0.01 for i in range(10)]  # no real gap
+        loose = [(0.0, (0, 0), 20.0, c) for c in circularities]
+        self.assertEqual(_calibrate_min_circularity(loose, _settings()), 0.6)
+
+    def test_never_calibrates_below_the_config_default(self):
+        # All candidates below the config floor -- calibration must not
+        # loosen the accepted threshold below what's configured.
+        loose = [(0.0, (0, 0), 20.0, c) for c in [0.56, 0.57, 0.58, 0.59, 0.58, 0.57]]
+        self.assertGreaterEqual(_calibrate_min_circularity(loose, _settings()), 0.6)
 
 
 class TestDetectCalloutsOnSyntheticImage(unittest.TestCase):

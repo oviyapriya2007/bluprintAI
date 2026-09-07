@@ -81,13 +81,19 @@ def detect_callouts(image_path: str, page_id: str = "page") -> list[CalloutCandi
 
     loose = _loose_candidates(contours)
     min_radius, max_radius = _calibrate_radius_range(loose, settings)
+    # Circularity is calibrated from the radius-filtered pool, not the raw
+    # loose pool: the full sheet has hundreds of tiny, irrelevant contours
+    # (text character fragments, dimension tick marks) whose circularities
+    # fill in the 0.55-0.95 range almost continuously, masking the real
+    # balloon-vs-noise gap. Restricting to plausibly-balloon-sized
+    # candidates first is what makes that gap visible again.
+    size_filtered = [t for t in loose if min_radius <= t[2] <= max_radius]
+    min_circularity = _calibrate_min_circularity(size_filtered, settings)
 
     candidates: list[CalloutCandidate] = []
     counter = 0
-    for _area, (cx, cy), radius, circularity in loose:
-        if radius < min_radius or radius > max_radius:
-            continue
-        if circularity < settings.callout_min_circularity:
+    for _area, (cx, cy), radius, circularity in size_filtered:
+        if circularity < min_circularity:
             continue
         counter += 1
         crop_id = f"{page_id}_c{counter:04d}"
@@ -111,7 +117,7 @@ def detect_callouts(image_path: str, page_id: str = "page") -> list[CalloutCandi
         len(candidates),
         min_radius,
         max_radius,
-        settings.callout_min_circularity,
+        min_circularity,
     )
     return candidates
 
@@ -156,6 +162,45 @@ def _calibrate_radius_range(loose, settings) -> tuple[float, float]:
     if high <= low:
         return float(settings.callout_min_radius_px), float(settings.callout_max_radius_px)
     return low, high
+
+
+# Real balloons are drawn as clean, consistent circles -- their circularity
+# scores cluster tightly and high. False positives (dimension lines and
+# arrowheads, partially-occluded holes, text character strokes, JPEG/scan
+# noise) are reliably less circular and cluster lower, with a wide gap in
+# between on a real sheet. A fixed default (settings.callout_min_circularity)
+# has to stay loose enough to not reject legitimate but slightly-imperfect
+# balloons on some sheet, which then lets every low-circularity false
+# positive on a *different*, cleaner sheet through too. Auto-calibrating
+# from this sheet's own distribution -- same philosophy as
+# _calibrate_radius_range -- fixes both sides at once.
+_MIN_CANDIDATES_FOR_CIRCULARITY_CALIBRATION = 6
+_MIN_CIRCULARITY_GAP = 0.08
+
+
+def _calibrate_min_circularity(loose, settings) -> float:
+    """Auto-calibrate the circularity cutoff from the widest gap in this
+    sheet's own sorted circularity distribution; fall back to the config
+    default when there aren't enough candidates, or no gap is wide enough
+    to trust as a real cluster boundary rather than noise."""
+    circularities = sorted(c for _, _, _, c in loose)
+    if len(circularities) < _MIN_CANDIDATES_FOR_CIRCULARITY_CALIBRATION:
+        return float(settings.callout_min_circularity)
+
+    best_gap = 0.0
+    best_index = None
+    for i in range(len(circularities) - 1):
+        gap = circularities[i + 1] - circularities[i]
+        if gap > best_gap:
+            best_gap = gap
+            best_index = i
+
+    if best_index is None or best_gap < _MIN_CIRCULARITY_GAP:
+        return float(settings.callout_min_circularity)
+
+    midpoint = (circularities[best_index] + circularities[best_index + 1]) / 2.0
+    # Calibration only tightens the default, never loosens below it.
+    return max(midpoint, float(settings.callout_min_circularity))
 
 
 def _padded_bbox(cx: float, cy: float, radius: float, width: int, height: int) -> dict:

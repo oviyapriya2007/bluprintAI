@@ -21,16 +21,26 @@ from backend.pipeline import (
 
 class TestBomRowToBomData(unittest.TestCase):
     def test_maps_fields(self):
-        row = {"item_no": "3", "description": "Hex Bolt", "qty": 6, "material": "Steel"}
+        row = {
+            "item_no": "3",
+            "description": "Hex Bolt",
+            "qty": 6,
+            "material": "Steel",
+            "part_number": "HB-M8-001",
+        }
         data = _bom_row_to_bom_data(row)
         self.assertEqual(data["item_number"], "3")
         self.assertEqual(data["description"], "Hex Bolt")
         self.assertEqual(data["quantity"], 6)
         self.assertEqual(data["material_specification"], "Steel")
+        # part_number must be passed through, not dropped -- procurement
+        # pricing (intelligence/procurement.py) is keyed by it.
+        self.assertEqual(data["part_number"], "HB-M8-001")
 
     def test_missing_optional_fields(self):
         data = _bom_row_to_bom_data({"item_no": "1"})
         self.assertEqual(data["item_number"], "1")
+        self.assertIsNone(data["part_number"])
         self.assertEqual(data["description"], "")
         self.assertIsNone(data["quantity"])
         self.assertIsNone(data["material_specification"])

@@ -21,7 +21,10 @@ Column-mapping / row-parsing logic (``_rows_to_bom_dicts``,
 pdfplumber, OpenCV, or Tesseract, so it can be unit-tested with
 hand-written fake rows -- see backend/tests/test_bom_extract.py.
 
-Output shape: ``[{"item_no", "description", "qty", "material"}, ...]``.
+Output shape: ``[{"item_no", "description", "qty", "material", "part_number"}, ...]``
+(``part_number`` is additive on top of the spec's original four fields --
+harmless to ignore, and lets callers wire it through to
+intelligence's procurement lookup, which is keyed by part number).
 """
 
 from __future__ import annotations
@@ -38,6 +41,7 @@ logger = logging.getLogger(__name__)
 # keywords first so e.g. "part no" doesn't get mistaken for "qty".
 _HEADER_KEYWORDS: dict[str, tuple[str, ...]] = {
     "item_no": ("item no", "item#", "item #", "item number", "ref", "no.", "item", "#", "bal", "balloon"),
+    "part_number": ("part number", "part no", "part#", "p/n"),
     "qty": ("qty", "quantity", "q'ty"),
     "material": ("material", "matl", "spec", "material spec"),
     "description": ("description", "desc", "part name", "name", "part description"),
@@ -138,7 +142,33 @@ def _table_rows_to_bom_dicts(table: list[list[Optional[str]]]) -> list[dict]:
 
 
 def _extract_from_raster_ocr(image_path: str) -> list[dict]:
-    words = _ocr_words(image_path)
+    """OCR the page for a BOM table, preferring an OpenCV-detected ruled
+    table region over the whole page. A full engineering-drawing sheet is
+    cluttered (dimension callouts, numbered general notes, other tables
+    like the title block) -- OCRing all of it risks picking up unrelated
+    numbered text (e.g. "1. ALL DIMENSIONS ARE...") as if it were a BOM
+    row, and column boundaries are far less reliable across a wide mix of
+    text than within one isolated table. Try the highest-row-count grid
+    region(s) first (most likely the actual parts list, vs. e.g. the
+    smaller title-block metadata grid); whole-page OCR is the last resort,
+    for genuinely borderless/gridless tables only."""
+    from PIL import Image
+
+    with Image.open(image_path) as full_image:
+        full_image = full_image.convert("RGB")
+        for region in _find_table_regions(image_path):
+            crop = full_image.crop((region["xmin"], region["ymin"], region["xmax"], region["ymax"]))
+            rows = _parse_ocr_table(crop)
+            if rows:
+                return rows
+        return _parse_ocr_table(full_image)
+
+
+_MAX_HEADER_SEARCH_ROWS = 3
+
+
+def _parse_ocr_table(image) -> list[dict]:
+    words = _ocr_words(image)
     if not words:
         return []
     text_rows = _words_to_text_rows(words)
@@ -146,18 +176,185 @@ def _extract_from_raster_ocr(image_path: str) -> list[dict]:
         return []
 
     gap_threshold = _infer_gap_threshold(text_rows)
-    header = _split_row_into_cells(text_rows[0], gap_threshold_px=gap_threshold)
-    mapping = _map_columns(header)
-    body_rows = text_rows[1:]
+    span_rows = [_split_row_into_cell_spans(row, gap_threshold_px=gap_threshold) for row in text_rows]
+    cell_rows = [[span["text"] for span in spans] for spans in span_rows]
+
+    # The header isn't always row 0 -- many parts-list tables have a
+    # merged title row ("PARTS LIST") spanning the whole table above the
+    # real column headers. Search the first few rows for whichever one
+    # actually matches known header keywords, rather than assuming row 0.
+    mapping = None
+    header_index = None
+    for i, cells in enumerate(cell_rows[:_MAX_HEADER_SEARCH_ROWS]):
+        candidate_mapping = _map_columns(cells)
+        if candidate_mapping is not None:
+            mapping, header_index = candidate_mapping, i
+            break
 
     if mapping is None:
-        # No confident header -- assume the standard positional order and
-        # treat every row (including the first) as data.
+        # No confident header found at all (e.g. a borderless table with
+        # no header row) -- assume the standard positional order and
+        # treat every row as data.
         mapping = {name: i for i, name in enumerate(_POSITIONAL_FALLBACK_ORDER)}
-        body_rows = text_rows
+        body_cell_rows, body_span_rows = cell_rows, span_rows
+    else:
+        body_cell_rows = cell_rows[header_index + 1 :]
+        body_span_rows = span_rows[header_index + 1 :]
 
-    cell_rows = [_split_row_into_cells(row, gap_threshold_px=gap_threshold) for row in body_rows]
-    return _rows_to_bom_dicts(cell_rows, mapping)
+    body_cell_rows = _refine_numeric_columns(image, body_cell_rows, body_span_rows, mapping)
+    return _rows_to_bom_dicts(body_cell_rows, mapping)
+
+
+# General-purpose OCR frequently misreads an isolated, context-free
+# single/double-digit number -- e.g. Tesseract reading a lone "2" in a
+# narrow ITEM column as "p3" -- since there's no surrounding word to
+# disambiguate against. item_no and qty cells are known (from the header)
+# to be purely numeric, so re-OCRing just those cells with a digit-only
+# character whitelist removes that ambiguity entirely, at the cost of a
+# few extra, cheap Tesseract calls (no Claude/network cost involved).
+_NUMERIC_REFINEMENT_FIELDS = ("item_no", "qty")
+_CELL_CROP_PADDING_PX = 4
+_DIGIT_ONLY_CONFIG = "--psm 8 -c tessedit_char_whitelist=0123456789"
+
+
+def _refine_numeric_columns(
+    image, cell_rows: list[list[str]], span_rows: list[list[dict]], mapping: dict[str, int]
+) -> list[list[str]]:
+    """Return a copy of ``cell_rows`` with the item_no/qty columns
+    replaced by a digit-only re-OCR of each cell's own crop, whenever that
+    re-OCR yields a non-empty digit string. Never raises: any failure
+    (missing pytesseract, an empty crop) just keeps the original
+    general-OCR text for that cell."""
+    refined_rows = [list(row) for row in cell_rows]
+    for field in _NUMERIC_REFINEMENT_FIELDS:
+        col_index = mapping.get(field)
+        if col_index is None:
+            continue
+        for row_index, spans in enumerate(span_rows):
+            if col_index >= len(spans) or col_index >= len(refined_rows[row_index]):
+                continue
+            span = spans[col_index]
+            if not span["text"]:
+                continue
+            digits = _ocr_digits_only(image, span)
+            if digits:
+                refined_rows[row_index][col_index] = digits
+    return refined_rows
+
+
+def _ocr_digits_only(image, span: dict) -> Optional[str]:
+    try:
+        import pytesseract
+    except ImportError:
+        return None
+
+    width, height = image.size
+    box = (
+        max(0, span["left"] - _CELL_CROP_PADDING_PX),
+        max(0, span["top"] - _CELL_CROP_PADDING_PX),
+        min(width, span["right"] + _CELL_CROP_PADDING_PX),
+        min(height, span["bottom"] + _CELL_CROP_PADDING_PX),
+    )
+    if box[2] <= box[0] or box[3] <= box[1]:
+        return None
+
+    try:
+        text = pytesseract.image_to_string(image.crop(box), config=_DIGIT_ONLY_CONFIG)
+    except Exception:  # noqa: BLE001 -- refinement is best-effort only
+        return None
+    digits = re.sub(r"\D", "", text)
+    return digits or None
+
+
+# Locating the ruled table region before OCR (rather than reading the whole
+# page) is what "table-structure detection" means here. A real table's row
+# dividers all span the *same* left/right table boundary -- e.g. a 7-row,
+# 5-column parts list has ~10 horizontal rule lines that all start and end
+# at (nearly) the same x-coordinates, however wide the individual columns
+# are. Dimension lines, leader lines, and view borders elsewhere on the
+# sheet essentially never share an x-extent with several other lines by
+# coincidence. So: find long horizontal line segments, group the ones that
+# share an x-extent, and the biggest group is the table -- far more
+# reliable than clustering on line unions or intersections, which either
+# fuse unrelated elements together (columns vary too much in width for one
+# dilation kernel to bridge) or miss real corners lost to JPEG/compression
+# noise entirely.
+_MIN_TABLE_ROWS = 3
+_MIN_TABLE_WIDTH_FRACTION = 0.08
+_MIN_TABLE_HEIGHT_FRACTION = 0.02
+_SEGMENT_EXTENT_TOLERANCE_PX = 15
+
+
+def _find_table_regions(image_path: str) -> list[dict]:
+    """Detect ruled-table regions on a raster page. Returns
+    ``[{"xmin","ymin","xmax","ymax","row_count"}, ...]`` sorted by
+    row_count (really: matching-divider count) descending. Never raises:
+    a missing OpenCV import, an unreadable image, or no matching group of
+    dividers all just return an empty list, and the caller falls back to
+    whole-page OCR."""
+    try:
+        import cv2
+    except ImportError:
+        return []
+
+    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        return []
+    height, width = image.shape
+
+    thresh = cv2.adaptiveThreshold(
+        image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 15
+    )
+    horiz_len = max(15, width // 40)
+    horiz_lines = cv2.morphologyEx(
+        thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (horiz_len, 1))
+    )
+
+    contours, _ = cv2.findContours(horiz_lines, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    segments = []
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        if w < width * _MIN_TABLE_WIDTH_FRACTION:
+            continue
+        segments.append((x, y, w, h))
+
+    return _group_segments_into_table_regions(segments, page_width=width, page_height=height)
+
+
+def _group_segments_into_table_regions(
+    segments: list[tuple[int, int, int, int]], *, page_width: int, page_height: int
+) -> list[dict]:
+    """Group horizontal line segments that share an x-extent (within
+    _SEGMENT_EXTENT_TOLERANCE_PX), and turn each sufficiently large group
+    into a candidate table region. Pure function of already-detected
+    segments -- no OpenCV/image I/O -- so it's unit-testable directly."""
+    groups: list[list[tuple[int, int, int, int]]] = []
+    for seg in segments:
+        x, y, w, h = seg
+        x_end = x + w
+        for group in groups:
+            gx, gy, gw, gh = group[0]
+            if abs(x - gx) <= _SEGMENT_EXTENT_TOLERANCE_PX and abs(x_end - (gx + gw)) <= _SEGMENT_EXTENT_TOLERANCE_PX:
+                group.append(seg)
+                break
+        else:
+            groups.append([seg])
+
+    regions = []
+    for group in groups:
+        if len(group) < _MIN_TABLE_ROWS:
+            continue
+        xs = [g[0] for g in group]
+        x_ends = [g[0] + g[2] for g in group]
+        ys = [g[1] for g in group]
+        y_ends = [g[1] + g[3] for g in group]
+        xmin, ymin, xmax, ymax = min(xs), min(ys), max(x_ends), max(y_ends)
+        if (ymax - ymin) < page_height * _MIN_TABLE_HEIGHT_FRACTION:
+            continue
+        regions.append({"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax, "row_count": len(group)})
+
+    regions.sort(key=lambda r: r["row_count"], reverse=True)
+    return regions
 
 
 # A gap threshold expressed as a fixed pixel count doesn't scale with image
@@ -204,24 +401,31 @@ def _infer_gap_threshold(text_rows: list[list[dict]]) -> float:
     return (sorted_gaps[best_index] + sorted_gaps[best_index + 1]) / 2.0
 
 
-def _ocr_words(image_path: str) -> list[dict]:
-    """Run Tesseract word-box OCR on an image. Returns a list of
-    ``{"text", "left", "top", "width", "height"}`` dicts (pixel space).
+def _ocr_words(image) -> list[dict]:
+    """Run Tesseract word-box OCR on an already-open PIL Image (a whole
+    page, or a table-region crop -- see _extract_from_raster_ocr). Returns
+    a list of ``{"text", "left", "top", "width", "height"}`` dicts,
+    pixel-space relative to whatever image was passed in.
 
     Never raises: a missing ``pytesseract`` package or missing system
     Tesseract binary both degrade to an empty result (logged once, at
     warning level, by the caller's try/except in ``extract_bom``).
     """
     import pytesseract
-    from PIL import Image
 
-    with Image.open(image_path) as img:
-        data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
 
     words = []
     for i, text in enumerate(data.get("text", [])):
         text = text.strip()
         if not text:
+            continue
+        if not any(ch.isalnum() for ch in text):
+            # Pure-punctuation "words" are almost always OCR misreading a
+            # ruled table's own grid lines as stray characters (e.g. "|"
+            # for a vertical rule) -- never real BOM content, and their
+            # tiny gaps to neighboring real words would otherwise skew
+            # _infer_gap_threshold toward a much-too-small threshold.
             continue
         try:
             conf = float(data["conf"][i])
@@ -279,23 +483,40 @@ def _split_row_into_cells(row_words: list[dict], gap_threshold_px: int = 25) -> 
     """Group a row's word boxes into cells by horizontal whitespace gaps
     (a gap wider than ``gap_threshold_px`` between consecutive words
     starts a new column) -- the standard heuristic for segmenting
-    borderless OCR'd tables into columns."""
+    borderless OCR'd tables into columns. Text only; see
+    _split_row_into_cell_spans for the bbox-carrying version used to
+    re-crop a specific column (e.g. for digit-only re-OCR)."""
+    return [span["text"] for span in _split_row_into_cell_spans(row_words, gap_threshold_px)]
+
+
+def _split_row_into_cell_spans(row_words: list[dict], gap_threshold_px: int = 25) -> list[dict]:
+    """Like _split_row_into_cells, but returns each cell's pixel bounding
+    box (the union of the word boxes grouped into it) alongside its text."""
     if not row_words:
         return []
-    cells: list[str] = []
-    current_words = [row_words[0]["text"]]
-    prev_right = row_words[0]["left"] + row_words[0]["width"]
+    cells: list[dict] = []
+    current_words = [row_words[0]]
 
     for word in row_words[1:]:
-        gap = word["left"] - prev_right
+        prev = current_words[-1]
+        gap = word["left"] - (prev["left"] + prev["width"])
         if gap > gap_threshold_px:
-            cells.append(" ".join(current_words))
-            current_words = [word["text"]]
+            cells.append(_cell_span(current_words))
+            current_words = [word]
         else:
-            current_words.append(word["text"])
-        prev_right = word["left"] + word["width"]
-    cells.append(" ".join(current_words))
+            current_words.append(word)
+    cells.append(_cell_span(current_words))
     return cells
+
+
+def _cell_span(words: list[dict]) -> dict:
+    return {
+        "text": " ".join(w["text"] for w in words),
+        "left": min(w["left"] for w in words),
+        "top": min(w["top"] for w in words),
+        "right": max(w["left"] + w["width"] for w in words),
+        "bottom": max(w["top"] + w["height"] for w in words),
+    }
 
 
 # --------------------------------------------------------------------------
@@ -337,6 +558,7 @@ def _rows_to_bom_dicts(rows: list[list[Any]], mapping: dict[str, int]) -> list[d
                 "description": _clean_cell(_get_cell(row, mapping.get("description"))),
                 "qty": _extract_qty(_get_cell(row, mapping.get("qty"))),
                 "material": _clean_cell(_get_cell(row, mapping.get("material"))) or None,
+                "part_number": _clean_cell(_get_cell(row, mapping.get("part_number"))) or None,
             }
         )
     return results

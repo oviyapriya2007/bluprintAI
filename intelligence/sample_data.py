@@ -8,7 +8,10 @@ Deliberately covers every case the validation engine needs to exercise:
     item 4            -> matched, low combined confidence (0.55)
     item 5            -> matched, part number has no catalog price
     item "6" (x2)     -> duplicate BOM item number
-    bubble "7" (x2)   -> duplicate drawing bubble
+    bubble "7" (x2)   -> one BOM row, two drawing balloons for it (a
+                         repeated physical instance, e.g. two identical
+                         fasteners) -- both matched, not flagged as a
+                         duplicate; see intelligence/reconciliation.py
     item 9            -> BOM item with no drawing callout
     bubble 14         -> drawing callout with no BOM item
     item 10           -> matched, missing quantity
@@ -147,13 +150,13 @@ SAMPLE_CALLOUTS: list[dict] = [
     },
     {
         "bubble_number": "7",
-        "location_description": "Drive shaft coupling",
+        "location_description": "Drive shaft coupling (instance 1)",
         "bounding_box": {"xmin": 500, "ymin": 250, "xmax": 545, "ymax": 295},
         "confidence_score": 0.94,
     },
     {
-        "bubble_number": "7",  # duplicate drawing bubble
-        "location_description": "Drive shaft coupling (mislabeled duplicate)",
+        "bubble_number": "7",  # second balloon for the same BOM item -- matched, not a duplicate
+        "location_description": "Drive shaft coupling (instance 2)",
         "bounding_box": {"xmin": 505, "ymin": 255, "xmax": 550, "ymax": 300},
         "confidence_score": 0.85,
     },

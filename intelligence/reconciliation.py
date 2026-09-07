@@ -152,8 +152,21 @@ def reconcile_bom_and_callouts(
     result.duplicate_item_numbers = sorted(
         (key for key, rows in bom_by_key.items() if len(rows) > 1), key=_sort_key
     )
+    # A single BOM row commonly covers several physically identical
+    # instances that are each individually balloon-labeled with the same
+    # number on the drawing (one "Hex Bolt, qty 4" BOM line, four separate
+    # "1" balloons -- one per bolt). That's an expected drawing
+    # convention, not a data-quality problem, so it is deliberately
+    # excluded here (and paired in full below) -- unlike two BOM rows
+    # sharing an item number, which normally *is* a real data-entry error
+    # and is still always flagged via duplicate_item_numbers above.
     result.duplicate_bubble_numbers = sorted(
-        (key for key, rows in callout_by_key.items() if len(rows) > 1), key=_sort_key
+        (
+            key
+            for key, rows in callout_by_key.items()
+            if len(rows) > 1 and len(bom_by_key.get(key, [])) != 1
+        ),
+        key=_sort_key,
     )
 
     # Pending: entries created for keys shared by both sides, then
@@ -170,18 +183,28 @@ def reconcile_bom_and_callouts(
         callout_rows = callout_by_key.get(key, [])
 
         if bom_rows and callout_rows:
-            # Duplicates on either side are paired by original order --
-            # a documented, deterministic convention (not a guess about
-            # which physical part is "really" which).
-            pair_count = min(len(bom_rows), len(callout_rows))
-            for i in range(pair_count):
-                matched_entries.append((key, bom_rows[i], callout_rows[i]))
-            for extra_bom in bom_rows[pair_count:]:
-                bom_only_entries.append((key, extra_bom))
-                result.unmatched_bom_items.append(extra_bom)
-            for extra_callout in callout_rows[pair_count:]:
-                callout_only_entries.append((key, extra_callout))
-                result.unmatched_callouts.append(extra_callout)
+            if len(bom_rows) == 1:
+                # One BOM row, one or more callouts sharing its number:
+                # every callout is an unambiguous repeat of the same part
+                # (see duplicate_bubble_numbers above) -- all matched to
+                # that one row, none left over as callout_only.
+                for callout_row in callout_rows:
+                    matched_entries.append((key, bom_rows[0], callout_row))
+            else:
+                # Two or more rows on both sides for this key is genuinely
+                # ambiguous which pairs with which -- paired by original
+                # order, a documented, deterministic convention (not a
+                # guess about which physical part is "really" which), and
+                # leftovers on either side still get flagged.
+                pair_count = min(len(bom_rows), len(callout_rows))
+                for i in range(pair_count):
+                    matched_entries.append((key, bom_rows[i], callout_rows[i]))
+                for extra_bom in bom_rows[pair_count:]:
+                    bom_only_entries.append((key, extra_bom))
+                    result.unmatched_bom_items.append(extra_bom)
+                for extra_callout in callout_rows[pair_count:]:
+                    callout_only_entries.append((key, extra_callout))
+                    result.unmatched_callouts.append(extra_callout)
         elif bom_rows:
             for row in bom_rows:
                 bom_only_entries.append((key, row))

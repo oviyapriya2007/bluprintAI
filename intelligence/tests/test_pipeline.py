@@ -29,7 +29,13 @@ class TestPipeline(unittest.TestCase):
         self.assertGreater(summary["missing_bom_items"], 0)
         self.assertGreater(summary["low_confidence_items"], 0)
         self.assertGreater(summary["duplicate_bom_items"], 0)
-        self.assertGreater(summary["duplicate_callouts"], 0)
+        # Bubble "7" appears twice in SAMPLE_CALLOUTS but item "7" has only
+        # one BOM row -- an expected repeated-instance drawing convention,
+        # not a duplicate (see intelligence/reconciliation.py). Both are
+        # matched to the same BOM row rather than counted as duplicates.
+        self.assertEqual(summary["duplicate_callouts"], 0)
+        item_7_components = [c for c in workspace["components"] if c["item_number"] == "7"]
+        self.assertEqual(len(item_7_components), 2)
 
         procurement_summary = workspace["procurement_summary"]
         self.assertGreater(procurement_summary["items_without_price"], 0)

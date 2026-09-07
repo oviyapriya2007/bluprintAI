@@ -49,8 +49,20 @@ class TestRowsToBomDicts(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                {"item_no": "1", "description": "Hex Bolt M8", "qty": 4, "material": "Steel"},
-                {"item_no": "2", "description": "Washer", "qty": 8, "material": "Nylon"},
+                {
+                    "item_no": "1",
+                    "description": "Hex Bolt M8",
+                    "qty": 4,
+                    "material": "Steel",
+                    "part_number": None,
+                },
+                {
+                    "item_no": "2",
+                    "description": "Washer",
+                    "qty": 8,
+                    "material": "Nylon",
+                    "part_number": None,
+                },
             ],
         )
 
@@ -71,7 +83,10 @@ class TestRowsToBomDicts(unittest.TestCase):
         mapping = {"item_no": 0}
         rows = [["1"]]
         result = _rows_to_bom_dicts(rows, mapping)
-        self.assertEqual(result, [{"item_no": "1", "description": "", "qty": None, "material": None}])
+        self.assertEqual(
+            result,
+            [{"item_no": "1", "description": "", "qty": None, "material": None, "part_number": None}],
+        )
 
     def test_item_no_extracts_digits_from_noisy_cell(self):
         mapping = {"item_no": 0, "description": 1, "qty": 2, "material": 3}
@@ -92,6 +107,26 @@ class TestTableRowsToBomDicts(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["item_no"], "1")
         self.assertEqual(result[1]["qty"], 4)
+
+    def test_part_number_column_is_extracted_when_present(self):
+        # Real parts-list tables commonly have a PART NUMBER column
+        # between ITEM and DESCRIPTION -- procurement pricing is keyed by
+        # part number, so this needs to come through, not be dropped.
+        table = [
+            ["ITEM", "PART NUMBER", "DESCRIPTION", "MATERIAL", "QTY"],
+            ["1", "HB-M8-001", "Hexagon Head Bolt M8 x 25", "Carbon Steel", "4"],
+        ]
+        result = _table_rows_to_bom_dicts(table)
+        self.assertEqual(result[0]["part_number"], "HB-M8-001")
+        self.assertEqual(result[0]["item_no"], "1")
+
+    def test_part_number_defaults_to_none_when_no_such_column(self):
+        table = [
+            ["ITEM NO.", "DESCRIPTION", "QTY", "MATERIAL"],
+            ["1", "Base Plate", "1", "Aluminum 6061"],
+        ]
+        result = _table_rows_to_bom_dicts(table)
+        self.assertIsNone(result[0]["part_number"])
 
     def test_single_row_table_is_skipped(self):
         self.assertEqual(_table_rows_to_bom_dicts([["ITEM", "DESC", "QTY", "MATERIAL"]]), [])
