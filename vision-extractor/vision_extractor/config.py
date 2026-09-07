@@ -30,7 +30,7 @@ class Settings:
     @classmethod
     def load(cls) -> "Settings":
         api_key = os.getenv("GEMINI_API_KEY") or None
-        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         use_mock_raw = os.getenv("USE_MOCK", "")
         # No API key => force mock mode regardless of USE_MOCK, so the
         # module always works out of the box for teammates without a key.

@@ -71,7 +71,7 @@ copy .env.example .env
 | Variable | Default | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | (none) | Your Gemini API key. Leave blank to force mock mode. |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name — never hardcoded elsewhere. |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | Gemini model name — never hardcoded elsewhere. |
 | `USE_MOCK` | auto | `true`/`false`. If unset, defaults to mock mode when no API key is present. |
 | `LOW_CONFIDENCE_THRESHOLD` | `0.70` | Below this, items get a warning (never silently dropped). |
 
@@ -105,7 +105,7 @@ shared contract exactly.
 2. In `.env`:
    ```
    GEMINI_API_KEY=your_key_here
-   GEMINI_MODEL=gemini-2.5-flash
+   GEMINI_MODEL=gemini-3.6-flash
    USE_MOCK=false
    ```
 3. `pip install google-genai` (already in `requirements.txt`).
