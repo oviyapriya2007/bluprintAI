@@ -259,6 +259,74 @@ tbody tr:hover {
   position: relative;
   padding: 20px;
   background: #f8fafc;
+  /* A stable viewport is required for pan/zoom to make sense (there must
+     be a bounded window smaller than the zoomed content to pan within),
+     and keeps the blueprint from overflowing its card on resize. Close to
+     this card's previous natural rendered height for a typical drawing,
+     so the at-rest appearance is effectively unchanged. */
+  height: 460px;
+  overflow: hidden;
+}
+
+/* --- Zoom/pan viewer: canvas + toolbar --- */
+
+.blueprint-canvas {
+  position: relative;
+}
+
+.blueprint-canvas .blueprint-image {
+  display: block;
+}
+
+.blueprint-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+}
+
+.blueprint-location-hint {
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.blueprint-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.blueprint-zoom-controls button {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.blueprint-zoom-controls button:hover {
+  background: #f8fafc;
+}
+
+.blueprint-zoom-controls button[aria-label="Zoom out"],
+.blueprint-zoom-controls button[aria-label="Zoom in"] {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+
+.reset-view-button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .blueprint-overlay {

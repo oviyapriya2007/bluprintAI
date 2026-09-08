@@ -14,6 +14,7 @@ function BlueprintOverlay({ parts, selectedPart, onSelect }) {
         return (
           <div
             key={part.id}
+            id={`blueprint-callout-${part.id}`}
             className={`blueprint-overlay ${isSelected ? "selected" : "unselected"}`}
             style={{
               left: `${xmin / 10}%`,
